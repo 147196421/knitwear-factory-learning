@@ -25,4 +25,24 @@ assert.deepEqual(
 );
 assert.equal(model.simulationState(999).step, 127);
 
-console.log("教学模型验算通过：56→112、112→18、162支、90转、2.5D四行往返");
+const sheet1FrontStart = model.garmentState("sheet1", "front", 0);
+assert.deepEqual(
+  { course: sheet1FrontStart.course, stitches: sheet1FrontStart.stitches, total: sheet1FrontStart.total, direction: sheet1FrontStart.direction },
+  { course: 0, stitches: 163, total: 94, direction: "right" }
+);
+const sheet1FrontEnd = model.garmentState("sheet1", "front", 94);
+assert.equal(sheet1FrontEnd.stage, "前幅完成");
+assert.ok(sheet1FrontEnd.neckOpen > 0);
+assert.equal(model.garmentState("sheet1", "front", 999).course, 94);
+
+const sheet1SleeveMid = model.garmentState("sheet1", "sleeve", 35);
+assert.ok(sheet1SleeveMid.stitches > 55);
+assert.equal(model.garmentState("sheet1", "sleeve", 59).stage, "袖片完成");
+
+const sheet2SleeveEnd = model.garmentState("sheet2", "sleeve", 73);
+assert.deepEqual(
+  { course: sheet2SleeveEnd.course, total: sheet2SleeveEnd.total, stage: sheet2SleeveEnd.stage },
+  { course: 73, total: 73, stage: "袖片完成" }
+);
+
+console.log("教学模型验算通过：针数变化、密度换算、逐针往返、两张图纸的六片成形");

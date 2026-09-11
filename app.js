@@ -44,7 +44,65 @@ const KnitModel = (() => {
     const completedInRow = phase === phases.length - 1 ? slot + 1 : slot;
     return { step: safeStep, totalSteps, row, rowCount, slot, phase, phaseName: phases[phase], direction, needle, completedInRow };
   }
-  return { events, calculate, simulationState };
+  const garmentPlans = {
+    sheet1: {
+      label: '图纸1',
+      front: { label: '前幅', kind: 'body', start: 163, body: 163, total: 94, neck: 'front', source: '照片可辨认：开163支、衫身94转' },
+      back: { label: '后幅', kind: 'body', start: 163, body: 160, total: 95, neck: 'back', source: '照片可辨认：开163支、衫身95转；身段宽度仍需原纸复核' },
+      sleeve: { label: '袖片', kind: 'sleeve', start: 55, body: 111, total: 59, source: '照片可辨认：开55支、袖身59转、上部111支' }
+    },
+    sheet2: {
+      label: '图纸2 · 圆领款',
+      front: { label: '前幅', kind: 'body', start: 154, body: 166, total: 79, neck: 'front', source: '照片可辨认：开154支、衫身79转；身段166支为图形旁转录值' },
+      back: { label: '后幅', kind: 'body', start: 150, body: 162, total: 77, neck: 'back', source: '照片可辨认：开150支、衫身77转；身段162支为图形旁转录值' },
+      sleeve: { label: '袖片', kind: 'sleeve', start: 55, body: 111, total: 73, source: '照片可辨认：开55支、袖身73转、上部111支' }
+    }
+  };
+  function garmentState(sheet, piece, course) {
+    const plan = garmentPlans[sheet]?.[piece] || garmentPlans.sheet1.front;
+    const safeCourse = Math.max(0, Math.min(plan.total, Math.round(Number(course) || 0)));
+    const progress = safeCourse / plan.total;
+    let stitches = plan.start;
+    let stage = '起底与开针';
+    let neckOpen = 0;
+    if (plan.kind === 'sleeve') {
+      if (progress < .1) stage = '袖口罗纹';
+      else if (progress < .7) {
+        stage = '袖身分段加针';
+        stitches = Math.round(plan.start + (plan.body - plan.start) * ((progress - .1) / .6));
+      } else if (progress < .96) {
+        stage = '袖山分段收针';
+        stitches = Math.round(plan.body * (1 - .72 * ((progress - .7) / .26)));
+      } else {
+        stage = safeCourse === plan.total ? '袖片完成' : '袖山顶收针';
+        stitches = Math.round(plan.body * .28);
+      }
+    } else {
+      if (progress < .08) {
+        stage = '起底与罗纹';
+        stitches = Math.round(plan.start + (plan.body - plan.start) * (progress / .08));
+      } else if (progress < .64) {
+        stage = '身段直织';
+        stitches = plan.body;
+      } else if (progress < .78) {
+        stage = '夹位分段收针';
+        stitches = Math.round(plan.body * (1 - .12 * ((progress - .64) / .14)));
+      } else if (progress < .86) {
+        stage = '上胸直织';
+        stitches = Math.round(plan.body * .88);
+      } else if (progress < .98) {
+        stage = plan.neck === 'front' ? '前领与肩部' : '后领与肩部';
+        stitches = Math.round(plan.body * .88);
+        neckOpen = (progress - .86) / .12 * (plan.neck === 'front' ? .38 : .28);
+      } else {
+        stage = safeCourse === plan.total ? `${plan.label}完成` : '肩部收针';
+        stitches = Math.round(plan.body * .88);
+        neckOpen = plan.neck === 'front' ? .38 : .28;
+      }
+    }
+    return { ...plan, course: safeCourse, progress, stitches, stage, neckOpen, direction: safeCourse % 2 === 0 ? 'right' : 'left' };
+  }
+  return { events, calculate, simulationState, garmentPlans, garmentState };
 })();
 
 if (typeof module !== 'undefined') module.exports = KnitModel;
@@ -56,7 +114,7 @@ if (typeof document !== 'undefined') {
     stitches: ['02', '加针与停针', '本页任务：点“下一步”，观察左右各加1支后总针数怎样变化。'],
     density: ['03', '尺寸换算', '本页任务：移动横向密度，观察同样宽度为什么需要不同针数。'],
     pieces: ['04', '从下往上读织片', '本页任务：选择前幅、后幅或袖片，再逐段向上阅读。'],
-    simulator: ['05', '真实横机模拟', '本页任务：先用整机视角看机头往返，再切到内部特写看当前织针怎样成圈。'],
+    simulator: ['05', '图纸到衣片', '本页任务：选择图纸和衣片，从第0转开始看机头往返、针数变化和衣片成形。'],
     machine: ['档案', '准备购买的机器', '本页任务：区分铭牌确认、资料推断和仍待现场确认的信息。']
   };
   let mode = 'increase';
@@ -69,7 +127,11 @@ if (typeof document !== 'undefined') {
   let simStep = 0;
   let simTimer = null;
   let simStructure = 'jersey';
-  let machineView = 'real';
+  let machineView = 'garment';
+  let garmentSheet = 'sheet1';
+  let garmentPiece = 'front';
+  let garmentCourse = 0;
+  let garmentTimer = null;
 
   function stopStitches() {
     clearTimeout(stitchTimer);
@@ -408,15 +470,94 @@ if (typeof document !== 'undefined') {
   $('sim-reset').addEventListener('click', () => { stopSimulator(); simStep = 0; drawSimulator(); });
   $('sim-timeline').addEventListener('input', event => { stopSimulator(); simStep = Number(event.target.value); drawSimulator(); });
 
+  function stopGarment() {
+    clearTimeout(garmentTimer);
+    garmentTimer = null;
+    if ($('garment-play')) $('garment-play').textContent = '播放成形';
+  }
+
+  function drawGarment() {
+    const state = KnitModel.garmentState(garmentSheet, garmentPiece, garmentCourse);
+    const maxWidth = 520;
+    const scale = maxWidth / state.body;
+    const center = 410;
+    const rowGap = Math.min(3.45, 330 / state.total);
+    let rows = '';
+    for (let course = 0; course <= state.course; course += 1) {
+      const rowState = KnitModel.garmentState(garmentSheet, garmentPiece, course);
+      const width = Math.max(70, rowState.stitches * scale);
+      const y = 174 + (state.course - course) * rowGap;
+      const left = center - width / 2;
+      const right = center + width / 2;
+      const current = course === state.course ? ' current' : '';
+      if (rowState.neckOpen > 0) {
+        const gap = Math.max(20, width * rowState.neckOpen);
+        rows += `<path d="M${left.toFixed(1)} ${y.toFixed(1)}H${(center - gap / 2).toFixed(1)}M${(center + gap / 2).toFixed(1)} ${y.toFixed(1)}H${right.toFixed(1)}" class="garment-row${current}"/>`;
+      } else {
+        rows += `<path d="M${left.toFixed(1)} ${y.toFixed(1)}H${right.toFixed(1)}" class="garment-row${current}"/>`;
+      }
+    }
+    $('garment-rows').innerHTML = rows;
+    const carriageX = state.direction === 'right' ? 560 : 92;
+    const carrierX = state.direction === 'right' ? 644 : 176;
+    $('garment-carriage').setAttribute('transform', `translate(${carriageX} 0)`);
+    $('garment-carrier').setAttribute('transform', `translate(${carrierX} 0)`);
+    $('garment-yarn').setAttribute('d', `M410 20C360 42,${carrierX + (state.direction === 'right' ? -28 : 28)} 74,${carrierX} 169`);
+    $('garment-stage').textContent = state.stage;
+    $('garment-course').textContent = `第 ${state.course} / ${state.total} 转`;
+    $('garment-stitches').textContent = `当前约 ${state.stitches} 支`;
+    $('garment-source').textContent = `${KnitModel.garmentPlans[garmentSheet].label} · ${state.label}｜${state.source}`;
+    $('garment-timeline').max = state.total;
+    $('garment-timeline').value = state.course;
+    $('garment-prev').disabled = state.course === 0;
+    $('garment-next').disabled = state.course === state.total;
+    document.querySelectorAll('[data-garment-sheet]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.garmentSheet === garmentSheet)));
+    document.querySelectorAll('[data-garment-piece]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.garmentPiece === garmentPiece)));
+  }
+
+  function advanceGarment() {
+    const state = KnitModel.garmentState(garmentSheet, garmentPiece, garmentCourse);
+    if (garmentCourse >= state.total) { stopGarment(); return; }
+    garmentTimer = setTimeout(() => {
+      garmentCourse += 1;
+      drawGarment();
+      advanceGarment();
+    }, Number($('garment-speed').value));
+  }
+
+  $('garment-play').addEventListener('click', () => {
+    if (garmentTimer) { stopGarment(); return; }
+    const state = KnitModel.garmentState(garmentSheet, garmentPiece, garmentCourse);
+    if (garmentCourse >= state.total) garmentCourse = 0;
+    $('garment-play').textContent = '暂停成形';
+    drawGarment();
+    advanceGarment();
+  });
+  $('garment-prev').addEventListener('click', () => { stopGarment(); garmentCourse = Math.max(0, garmentCourse - 1); drawGarment(); });
+  $('garment-next').addEventListener('click', () => { stopGarment(); garmentCourse = Math.min(KnitModel.garmentState(garmentSheet, garmentPiece, 0).total, garmentCourse + 1); drawGarment(); });
+  $('garment-reset').addEventListener('click', () => { stopGarment(); garmentCourse = 0; drawGarment(); });
+  $('garment-timeline').addEventListener('input', event => { stopGarment(); garmentCourse = Number(event.target.value); drawGarment(); });
+  document.querySelectorAll('[data-garment-sheet]').forEach(button => button.addEventListener('click', () => { stopGarment(); garmentSheet = button.dataset.garmentSheet; garmentCourse = 0; drawGarment(); }));
+  document.querySelectorAll('[data-garment-piece]').forEach(button => button.addEventListener('click', () => { stopGarment(); garmentPiece = button.dataset.garmentPiece; garmentCourse = 0; drawGarment(); }));
+
   function selectMachineView(view) {
     machineView = view;
     $('real-machine-view').hidden = view !== 'real';
     $('internal-machine-view').hidden = view !== 'inside';
+    $('garment-machine-view').hidden = view !== 'garment';
+    $('loop-controls').hidden = view === 'garment';
+    $('sim-workspace').classList.toggle('garment-mode', view === 'garment');
+    $('sim-teacher-panel').hidden = view === 'garment';
+    if (view === 'garment') stopSimulator();
+    else stopGarment();
     document.querySelectorAll('[data-machine-view]').forEach(button =>
       button.setAttribute('aria-pressed', String(button.dataset.machineView === view)));
-    $('sim-view-note').textContent = view === 'real'
-      ? '先看整台机器：灰色机头在透明护罩内往返，纱嘴跟随，织片逐行向下增长。'
-      : '再看内部特写：橙色是当前织针，下面四步轨道会告诉你这一瞬间发生什么。';
+    const notes = {
+      garment: '先看图纸怎样变成衣片：实机上的织片从针床向下悬挂，方向与纸上从下往上阅读相反。',
+      real: '再看整机动作：灰色机头在透明护罩内往返，纱嘴跟随，织片逐行向下增长。',
+      inside: '最后看单针特写：橙色是当前织针，下面四步轨道会告诉你这一瞬间发生什么。'
+    };
+    $('sim-view-note').textContent = notes[view];
   }
   document.querySelectorAll('[data-machine-view]').forEach(button =>
     button.addEventListener('click', () => selectMachineView(button.dataset.machineView)));
@@ -467,7 +608,7 @@ if (typeof document !== 'undefined') {
   const simLayerButtons = [...document.querySelectorAll('[data-sim-layer]')];
   function selectSimLayer(button) {
     const layer = button.dataset.simLayer;
-    if (layer !== 'row') stopSimulator();
+    if (layer !== 'row') { stopSimulator(); stopGarment(); }
     simLayerButtons.forEach(item => {
       item.setAttribute('aria-selected', String(item === button));
       item.tabIndex = item === button ? 0 : -1;
@@ -498,6 +639,7 @@ if (typeof document !== 'undefined') {
     stopStitches();
     stopPiece();
     stopSimulator();
+    stopGarment();
     document.querySelectorAll('.page').forEach(section => section.hidden = section.id !== id);
     document.querySelectorAll('[data-page]').forEach(link => {
       if (link.dataset.page === id) link.setAttribute('aria-current', 'page');
@@ -513,13 +655,14 @@ if (typeof document !== 'undefined') {
     document.title = document.getElementById(id).querySelector('h1').textContent + ' · 织学堂';
   }
   window.addEventListener('hashchange', route);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { stopStitches(); stopPiece(); stopSimulator(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { stopStitches(); stopPiece(); stopSimulator(); stopGarment(); } });
   drawStitches();
   setZone('identity');
   calculateDensity();
   drawPiece();
   drawNeedleStates('working');
   drawSimulator();
+  drawGarment();
   drawBed3d();
   route();
 }
