@@ -1,6 +1,6 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#173b63"><title>织学堂 · 毛织可视化课堂</title><meta name="description" content="零基础毛织工艺：2D针位、2.5D逐行成圈、前后针床3D与慈星设备档案。"><link rel="stylesheet" href="./styles.css?v=5"><script src="./app.js?v=5" defer></script><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23173b63'/%3E%3Cpath d='M7 8v10l5 5 4-5V8m0 10 4 5 5-5V8' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E"></head>
-<body><a class="skip" href="#main">跳到课程</a><header><a class="brand" href="#stitches"><b>织</b><span>织学堂<small>毛织工艺可视化课堂</small></span></a><span class="version">零基础 / 学习版 5.0</span><a class="archive-link" href="https://github.com/147196421/knitwear-factory-learning">项目档案</a></header>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#173b63"><title>织学堂 · 毛织可视化课堂</title><meta name="description" content="零基础毛织工艺：2D针位、2.5D逐行成圈、前后针床3D与慈星设备档案。"><link rel="stylesheet" href="./styles.css?v=6"><script src="./app.js?v=6" defer></script><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23173b63'/%3E%3Cpath d='M7 8v10l5 5 4-5V8m0 10 4 5 5-5V8' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E"></head>
+<body><a class="skip" href="#main">跳到课程</a><header><a class="brand" href="#stitches"><b>织</b><span>织学堂<small>毛织工艺可视化课堂</small></span></a><span class="version">零基础 / 学习版 5.1</span><a class="archive-link" href="https://github.com/147196421/knitwear-factory-learning">项目档案</a></header>
 <div class="shell"><aside class="sidebar"><p class="eyebrow">按这个顺序学</p><nav aria-label="课程目录">
 <a href="#map" data-page="map"><span>01</span><div>工艺单地图<small>先知道去哪里找数字</small></div></a>
 <a href="#stitches" data-page="stitches"><span>02</span><div>加针与停针<small>看看每一步怎么变</small></div></a>
@@ -35,7 +35,7 @@
   </div>
   <div id="sim-panel-row" data-sim-panel="row" role="tabpanel" aria-labelledby="sim-tab-row">
     <div class="sim-panel sim-row-layout"><div class="sim-machine-wrap"><div class="stage-head"><span id="sim-row">第 1 / 4 行</span><span id="sim-step">1 / 128</span></div>
-      <svg id="sim-machine" viewBox="0 0 760 440" role="img" aria-labelledby="sim-machine-title sim-machine-desc"><title id="sim-machine-title">电脑横机逐针成圈2.5D教学模型</title><desc id="sim-machine-desc">机头带着纱嘴左右移动，八根织针依次完成上升、垫纱、脱圈和形成新线圈。</desc>
+      <p class="sim-mobile-hint">先看下面三行大字，再看图中橙色织针。图会完整缩放，不需要左右拖动。</p><svg id="sim-machine" viewBox="0 0 760 440" width="760" height="440" role="img" aria-labelledby="sim-machine-title sim-machine-desc"><title id="sim-machine-title">电脑横机逐针成圈2.5D教学模型</title><desc id="sim-machine-desc">机头带着纱嘴左右移动，八根织针依次完成上升、垫纱、脱圈和形成新线圈。</desc>
         <path id="sim-direction-arrow" class="sim-arrow" d="M150 34 H605 M590 22 L607 34 L590 46"/><text x="378" y="25" text-anchor="middle" class="sim-svg-label">机头本行运行方向</text>
         <path d="M104 292 L620 292 L674 330 L82 330 Z" class="needle-bed-surface"/><path d="M82 330 L674 330 L650 352 L106 352 Z" class="needle-bed-edge"/>
         <g id="sim-needles"></g><polygon id="sim-fabric" points="112 342,632 342,610 350,134 350" class="sim-fabric"/><g id="sim-loops"></g>
@@ -44,7 +44,7 @@
         <g id="sim-carrier" transform="translate(142 0)"><path d="M0 112 V155" class="carrier-stem"/><circle cx="0" cy="157" r="7" class="carrier-eye"/><text x="12" y="130">纱嘴</text></g>
         <text x="378" y="424" text-anchor="middle" class="sim-svg-label">教学缩减为8针；真实机器针数更多，动作由程序和机头机构控制</text>
       </svg>
-      <div class="sim-readout" aria-live="polite"><strong id="sim-direction">机头：左 → 右</strong><span id="sim-needle">当前：第1针</span><span id="sim-phase">1 / 4 · 针上升</span></div>
+      <div class="sim-readout" aria-live="polite"><strong id="sim-direction">机头：左 → 右</strong><span id="sim-needle">当前：第1针</span><span id="sim-phase">1 / 4 · 针上升</span></div><ol class="sim-phase-track" aria-label="当前织针的四个成圈动作"><li data-sim-phase="0"><b>1</b><span>上针开舌</span></li><li data-sim-phase="1"><b>2</b><span>纱嘴垫纱</span></li><li data-sim-phase="2"><b>3</b><span>下降脱圈</span></li><li data-sim-phase="3"><b>4</b><span>形成新圈</span></li></ol>
       <div class="player"><div class="row"><button id="sim-prev">上一步</button><button id="sim-play" class="primary">播放逐针动画</button><button id="sim-next">下一步</button><button id="sim-reset">重来</button></div><label>速度<select id="sim-speed"><option value="1100">慢速</option><option value="650" selected>正常</option><option value="350">快速</option></select></label></div>
       <label class="caption" for="sim-timeline">拖动查看4行、每行8针、每针4个动作</label><input id="sim-timeline" type="range" min="0" max="127" value="0">
     </div><aside class="sim-teacher" aria-live="polite"><p class="eyebrow">现在只看当前这根针</p><h2 id="sim-stage-title"></h2><p id="sim-stage-copy"></p><div class="sim-check"><small>动作后检查</small><strong id="sim-stage-check"></strong></div><p class="notice">这是单边组织的原理教学模型，不是慈星程序回放；“一行”也不能直接当成工艺单上的固定“1转”。</p></aside></div>

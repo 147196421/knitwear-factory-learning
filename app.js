@@ -317,6 +317,12 @@ if (typeof document !== 'undefined') {
     $('sim-direction').textContent = state.direction === 'right' ? '机头：左 → 右' : '机头：右 → 左';
     $('sim-needle').textContent = `当前：第 ${state.needle + 1} 针`;
     $('sim-phase').textContent = `${state.phase + 1} / 4 · ${state.phaseName}`;
+    document.querySelectorAll('[data-sim-phase]').forEach((item, index) => {
+      item.classList.toggle('done', index < state.phase);
+      item.classList.toggle('current', index === state.phase);
+      if (index === state.phase) item.setAttribute('aria-current', 'step');
+      else item.removeAttribute('aria-current');
+    });
     $('sim-stage-title').textContent = simPhaseCopy[state.phase][0];
     $('sim-stage-copy').textContent = simPhaseCopy[state.phase][1];
     $('sim-stage-check').textContent = simPhaseCopy[state.phase][2];
