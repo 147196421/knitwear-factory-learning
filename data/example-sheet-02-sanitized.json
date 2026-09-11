@@ -1,0 +1,26 @@
+{
+  "purpose": "构造的圆领衫教学数据，不对应任何真实订单",
+  "size": "教学码",
+  "unit": "inch",
+  "machine_gauge": "示例针距",
+  "fabric": "示例组织",
+  "gauge": {
+    "stitches_per_inch": 9.0,
+    "courses_per_inch": 4.5
+  },
+  "garment_measurements": {
+    "chest_width": 18.0,
+    "body_length": 20.0,
+    "hem_height": 2.5,
+    "cuff_height": 2.5,
+    "sleeve_length": 20.0
+  },
+  "sleeve": {
+    "cast_on_stitches": 56,
+    "maximum_stitches": 112,
+    "remaining_center_stitches": 18,
+    "increase_sequence": ["5+1+3", "1+1+7", "2+1+14", "4+1+4"],
+    "hold_sequence": ["1-2-3", "1-3-7", "1-5-4"]
+  },
+  "privacy": "所有数值均为教学构造数据；私人资料、订单信息、生产标识和原图均未公开"
+}

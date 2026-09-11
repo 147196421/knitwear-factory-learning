@@ -1,0 +1,7 @@
+services:
+  knitwear-learning:
+    build: .
+    container_name: knitwear-learning
+    restart: unless-stopped
+    ports:
+      - "8080:80"

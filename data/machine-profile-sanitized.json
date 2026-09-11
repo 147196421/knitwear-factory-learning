@@ -1,0 +1,28 @@
+{
+  "status": "planned_purchase_not_owned",
+  "source": "private_photos_with_identifiers_excluded",
+  "confirmed_from_nameplate": {
+    "manufacturer": "宁波慈星股份有限公司",
+    "brand": "CIXING",
+    "machine_type": "CX2-52C-U",
+    "spec_width_marking": "5/7/52",
+    "rated_power_kw": 1.2,
+    "voltage_v": 220,
+    "frequency_hz": 50,
+    "manufacture_month": "2025-08"
+  },
+  "observed": {
+    "multiple_similar_machines_in_operation": true,
+    "production_operator_screen_available": true
+  },
+  "not_yet_confirmed": [
+    "controller_brand_and_version",
+    "pattern_design_software_and_version",
+    "machine_program_file_extension",
+    "needle_bed_type",
+    "yarn_feeder_count",
+    "exact_comb_and_takedown_configuration",
+    "usable_knitting_scope"
+  ],
+  "privacy": "machine_serial_number_production_filename_and_original_photos_are_not_public"
+}
