@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-labelledby="title desc">
+  <title id="title">参考图纸1教学清稿</title>
+  <desc id="desc">去除手写笔迹与识别信息后重绘的前幅、后幅和袖片教学版图。</desc>
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#dbe5ec" stroke-width="1"/></pattern>
+    <style>
+      text{font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;fill:#18324a}.muted{fill:#64788b}.tiny{font-size:15px}.small{font-size:18px}.body{font-size:21px}.label{font-size:17px;font-weight:700}.title{font-size:32px;font-weight:700}.line{fill:none;stroke:#274d63;stroke-width:3;stroke-linejoin:round}.guide{fill:none;stroke:#93a8b5;stroke-width:2;stroke-dasharray:6 6}.confirmed{fill:#e1f3eb;stroke:#2a765c;stroke-width:1.5}.pending{fill:#fff2df;stroke:#b36a25;stroke-width:1.5}.panel{fill:#fff;stroke:#9fb2bf;stroke-width:2}.rib{fill:#dce9ef}.shape{fill:#edf3f6;stroke:#274d63;stroke-width:3;stroke-linejoin:round}.stage{stroke:#b9c8d1;stroke-width:1.5;stroke-dasharray:5 5}.dimension{fill:none;stroke:#b4541b;stroke-width:2}.accent{fill:#b4541b}.white{fill:#fff}
+    </style>
+  </defs>
+  <rect width="1200" height="820" fill="#f7fafb"/><rect width="1200" height="820" fill="url(#grid)" opacity=".55"/>
+  <rect x="30" y="28" width="1140" height="764" rx="8" class="panel"/>
+  <text x="64" y="78" class="title">参考图纸 1 · 教学清稿</text>
+  <text x="64" y="111" class="small muted">已去除手写笔迹、联系方式和生产识别信息｜按照片可辨认内容重绘</text>
+  <rect x="906" y="50" width="224" height="48" rx="5" class="pending"/><text x="1018" y="81" text-anchor="middle" class="label">非生产吓数 · 待复核</text>
+
+  <g transform="translate(58 148)">
+    <rect width="242" height="596" rx="6" class="panel"/>
+    <text x="22" y="40" class="label">读图顺序</text>
+    <path d="M46 510V96m-10 18 10-18 10 18" class="dimension"/>
+    <text x="68" y="117" class="body">肩领／袖山</text><text x="68" y="509" class="body">下摆／袖口</text>
+    <line x1="22" y1="146" x2="220" y2="146" class="stage"/>
+    <text x="22" y="184" class="small">纸上：从下往上读</text>
+    <text x="22" y="221" class="small">横向：支数＝宽度</text>
+    <text x="22" y="258" class="small">纵向：转数＝高度</text>
+    <rect x="22" y="300" width="198" height="82" rx="5" class="confirmed"/>
+    <text x="38" y="330" class="label">绿色节点</text><text x="38" y="360" class="tiny">照片中较清楚，可用于教学</text>
+    <rect x="22" y="400" width="198" height="96" rx="5" class="pending"/>
+    <text x="38" y="430" class="label">橙色提示</text><text x="38" y="460" class="tiny">分段加减针仍需清晰原纸</text><text x="38" y="484" class="tiny">不可直接制作上机程序</text>
+  </g>
+
+  <g transform="translate(326 148)">
+    <rect width="260" height="596" rx="6" class="panel"/><text x="130" y="42" text-anchor="middle" class="title">前幅</text>
+    <path d="M54 520V220L78 190L87 106H112Q130 135 148 106H173L182 190L206 220V520Z" class="shape"/>
+    <rect x="54" y="486" width="152" height="34" class="rib"/><line x1="54" y1="486" x2="206" y2="486" class="line"/>
+    <line x1="54" y1="220" x2="206" y2="220" class="stage"/><line x1="80" y1="190" x2="180" y2="190" class="stage"/>
+    <path d="M44 520H216m-12-8 12 8-12 8M56 512l-12 8 12 8" class="dimension"/><text x="130" y="555" text-anchor="middle" class="label accent">开 163 支</text>
+    <path d="M225 520V106m-8 12 8-12 8 12M217 508l8 12 8-12" class="dimension"/><text x="241" y="330" transform="rotate(90 241 330)" text-anchor="middle" class="label accent">衫身约 94 转</text>
+    <rect x="32" y="64" width="196" height="34" rx="4" class="confirmed"/><text x="130" y="87" text-anchor="middle" class="tiny">开针与总转数：照片可辨认</text>
+    <text x="130" y="584" text-anchor="middle" class="tiny muted">夹位、领窝、肩斜明细：待复核</text>
+  </g>
+
+  <g transform="translate(612 148)">
+    <rect width="260" height="596" rx="6" class="panel"/><text x="130" y="42" text-anchor="middle" class="title">后幅</text>
+    <path d="M54 520V220L78 190L87 106H111Q130 119 149 106H173L182 190L206 220V520Z" class="shape"/>
+    <rect x="54" y="486" width="152" height="34" class="rib"/><line x1="54" y1="486" x2="206" y2="486" class="line"/>
+    <line x1="54" y1="220" x2="206" y2="220" class="stage"/><line x1="80" y1="190" x2="180" y2="190" class="stage"/>
+    <path d="M44 520H216m-12-8 12 8-12 8M56 512l-12 8 12 8" class="dimension"/><text x="130" y="555" text-anchor="middle" class="label accent">开 163 支</text>
+    <path d="M225 520V106m-8 12 8-12 8 12M217 508l8 12 8-12" class="dimension"/><text x="241" y="330" transform="rotate(90 241 330)" text-anchor="middle" class="label accent">衫身约 95 转</text>
+    <rect x="32" y="64" width="196" height="34" rx="4" class="confirmed"/><text x="130" y="87" text-anchor="middle" class="tiny">开针与总转数：照片可辨认</text>
+    <text x="130" y="584" text-anchor="middle" class="tiny muted">后领较浅｜身段宽度仍待复核</text>
+  </g>
+
+  <g transform="translate(898 148)">
+    <rect width="244" height="596" rx="6" class="panel"/><text x="122" y="42" text-anchor="middle" class="title">袖片</text>
+    <path d="M91 520L48 246L72 204L94 106H150L172 204L196 246L153 520Z" class="shape"/>
+    <rect x="91" y="486" width="62" height="34" class="rib"/><line x1="91" y1="486" x2="153" y2="486" class="line"/>
+    <line x1="48" y1="246" x2="196" y2="246" class="stage"/><line x1="72" y1="204" x2="172" y2="204" class="stage"/>
+    <path d="M82 520H162m-12-8 12 8-12 8M94 512l-12 8 12 8" class="dimension"/><text x="122" y="555" text-anchor="middle" class="label accent">开 55 支</text>
+    <path d="M84 94H160m-12-8 12 8-12 8M96 86L84 94l12 8" class="dimension"/><text x="122" y="78" text-anchor="middle" class="label accent">上部约 111 支</text>
+    <path d="M211 520V106m-8 12 8-12 8 12M203 508l8 12 8-12" class="dimension"/><text x="226" y="330" transform="rotate(90 226 330)" text-anchor="middle" class="label accent">袖身约 59 转</text>
+    <text x="122" y="584" text-anchor="middle" class="tiny muted">加针与袖山分组：待复核</text>
+  </g>
+
+  <text x="600" y="778" text-anchor="middle" class="small muted">教学重绘：只帮助学习版图结构和方向，不代表原工艺单的完整精确副本</text>
+</svg>

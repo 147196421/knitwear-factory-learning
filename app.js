@@ -134,7 +134,7 @@ if (typeof module !== 'undefined') module.exports = KnitModel;
 if (typeof document !== 'undefined') {
   const $ = id => document.getElementById(id);
   const routeInfo = {
-    map: ['01', '工艺单地图', '本页任务：依次点四个区域，知道身份、尺寸、织片和纱线信息在哪里。'],
+    map: ['01', '工艺单地图', '本页任务：先放大查看两张干净清稿，再点四个区域认识尺寸、织片和纱线信息。'],
     stitches: ['02', '加针与停针', '本页任务：点“下一步”，观察左右各加1支后总针数怎样变化。'],
     density: ['03', '尺寸换算', '本页任务：移动横向密度，观察同样宽度为什么需要不同针数。'],
     pieces: ['04', '从下往上读织片', '本页任务：选择前幅、后幅或袖片，再逐段向上阅读。'],
@@ -157,6 +157,8 @@ if (typeof document !== 'undefined') {
   let garmentCourse = 0;
   let garmentTimer = null;
   let garmentStopAt = null;
+  let sheetPreviewScale = 1;
+  let sheetPreviewTrigger = null;
 
   function stopStitches() {
     clearTimeout(stitchTimer);
@@ -704,6 +706,31 @@ if (typeof document !== 'undefined') {
     });
   });
   selectSimLayer(simLayerButtons.find(button => button.getAttribute('aria-selected') === 'true'));
+
+  function setSheetPreviewScale(nextScale) {
+    sheetPreviewScale = Math.max(.5, Math.min(3, nextScale));
+    $('sheet-preview-image').style.width = `${sheetPreviewScale * 100}%`;
+    $('sheet-preview-scale').textContent = `${Math.round(sheetPreviewScale * 100)}%`;
+    $('sheet-zoom-out').disabled = sheetPreviewScale <= .5;
+    $('sheet-zoom-in').disabled = sheetPreviewScale >= 3;
+  }
+  document.querySelectorAll('[data-sheet-preview]').forEach(button => button.addEventListener('click', () => {
+    sheetPreviewTrigger = button;
+    $('sheet-preview-image').src = button.dataset.sheetPreview;
+    $('sheet-preview-image').alt = button.querySelector('img').alt;
+    $('sheet-preview-title').textContent = button.dataset.sheetTitle;
+    $('sheet-preview-original').href = button.dataset.sheetPreview;
+    setSheetPreviewScale(1);
+    $('sheet-preview-dialog').showModal();
+  }));
+  $('sheet-zoom-out').addEventListener('click', () => setSheetPreviewScale(sheetPreviewScale - .25));
+  $('sheet-zoom-reset').addEventListener('click', () => setSheetPreviewScale(1));
+  $('sheet-zoom-in').addEventListener('click', () => setSheetPreviewScale(sheetPreviewScale + .25));
+  $('sheet-preview-close').addEventListener('click', () => $('sheet-preview-dialog').close());
+  $('sheet-preview-dialog').addEventListener('click', event => {
+    if (event.target === $('sheet-preview-dialog')) $('sheet-preview-dialog').close();
+  });
+  $('sheet-preview-dialog').addEventListener('close', () => sheetPreviewTrigger?.focus());
 
   function route() {
     let id = location.hash.slice(1) || 'stitches';

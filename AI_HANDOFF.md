@@ -99,6 +99,9 @@
 - 阶段按钮的起止转数统一由`garmentSegments()`生成，`garmentState()`同时返回`action`、`equation`、`evidence`和当前阶段说明；测试必须保证所有转数都落在唯一正确阶段。
 - 新增“播放到下一阶段”，用于分段学习；所有动态说明保持`aria-live`，手机端纸图、说明和阶段按钮改为纵向布局。
 - `data/reference-sheets-teaching-transcription.json`是以后AI读取两张图纸教学值和证据边界的首选结构化文件，`docs/lesson-04.md`是本课完整讲义。
+- 9.0版新增`assets/sheet-01-clean.svg`和`assets/sheet-02-clean.svg`。这是依据可辨认内容重新绘制的脱敏教学清稿，不是对原工艺单的逐字复制。
+- 第1课工艺单地图提供两张清稿缩略图和原生`dialog`全屏预览，支持50%–300%缩放、键盘Esc关闭、关闭后焦点返回和原尺寸新窗口链接。
+- 清稿不得补入原照片中的款号、联系方式、生产编号、文件名、私人关系或地点；不确定数字继续显示“待复核”。
 
 拟购设备档案已经建立：
 
