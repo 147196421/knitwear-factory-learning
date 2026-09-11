@@ -56,7 +56,7 @@ if (typeof document !== 'undefined') {
     stitches: ['02', '加针与停针', '本页任务：点“下一步”，观察左右各加1支后总针数怎样变化。'],
     density: ['03', '尺寸换算', '本页任务：移动横向密度，观察同样宽度为什么需要不同针数。'],
     pieces: ['04', '从下往上读织片', '本页任务：选择前幅、后幅或袖片，再逐段向上阅读。'],
-    simulator: ['05', '横机逐行模拟', '本页任务：先播放2.5D动画，再切换四层视图理解针、线、机头和针床。'],
+    simulator: ['05', '真实横机模拟', '本页任务：先用整机视角看机头往返，再切到内部特写看当前织针怎样成圈。'],
     machine: ['档案', '准备购买的机器', '本页任务：区分铭牌确认、资料推断和仍待现场确认的信息。']
   };
   let mode = 'increase';
@@ -69,6 +69,7 @@ if (typeof document !== 'undefined') {
   let simStep = 0;
   let simTimer = null;
   let simStructure = 'jersey';
+  let machineView = 'real';
 
   function stopStitches() {
     clearTimeout(stitchTimer);
@@ -339,6 +340,17 @@ if (typeof document !== 'undefined') {
       ? 'M150 34 H605 M590 22 L607 34 L590 46'
       : 'M605 34 H150 M165 22 L148 34 L165 46');
 
+    const realX = 188 + state.needle * 62;
+    $('real-carriage').setAttribute('transform', `translate(${realX - 69} 0)`);
+    $('real-carrier').setAttribute('transform', `translate(${realX} 0)`);
+    $('real-yarn').setAttribute('d', `M325 67 C390 82,${realX - 36} 128,${realX} 247`);
+    $('real-knit-line').setAttribute('d', state.direction === 'right'
+      ? `M145 302H${realX}`
+      : `M675 302H${realX}`);
+    const realFabricHeight = Math.max(8, finishedRows * 18);
+    $('real-fabric').setAttribute('points', `145 306,675 306,665 ${306 + realFabricHeight},155 ${306 + realFabricHeight}`);
+    $('real-machine').setAttribute('data-phase', state.phase);
+
     $('sim-needles').innerHTML = Array.from({ length: 8 }, (_, index) => {
       const active = index === state.needle;
       const raised = active && state.phase < 2;
@@ -370,6 +382,7 @@ if (typeof document !== 'undefined') {
     $('sim-loops').innerHTML = loops;
     const fabricHeight = Math.max(8, finishedRows * 20);
     $('sim-fabric').setAttribute('points', `112 342,632 342,610 ${342 + fabricHeight},134 ${342 + fabricHeight}`);
+
   }
 
   function advanceSimulator() {
@@ -394,6 +407,20 @@ if (typeof document !== 'undefined') {
   $('sim-next').addEventListener('click', () => { stopSimulator(); simStep = Math.min(KnitModel.simulationState(0).totalSteps - 1, simStep + 1); drawSimulator(); });
   $('sim-reset').addEventListener('click', () => { stopSimulator(); simStep = 0; drawSimulator(); });
   $('sim-timeline').addEventListener('input', event => { stopSimulator(); simStep = Number(event.target.value); drawSimulator(); });
+
+  function selectMachineView(view) {
+    machineView = view;
+    $('real-machine-view').hidden = view !== 'real';
+    $('internal-machine-view').hidden = view !== 'inside';
+    document.querySelectorAll('[data-machine-view]').forEach(button =>
+      button.setAttribute('aria-pressed', String(button.dataset.machineView === view)));
+    $('sim-view-note').textContent = view === 'real'
+      ? '先看整台机器：灰色机头在透明护罩内往返，纱嘴跟随，织片逐行向下增长。'
+      : '再看内部特写：橙色是当前织针，下面四步轨道会告诉你这一瞬间发生什么。';
+  }
+  document.querySelectorAll('[data-machine-view]').forEach(button =>
+    button.addEventListener('click', () => selectMachineView(button.dataset.machineView)));
+  selectMachineView(machineView);
 
   function drawNeedleStates(state) {
     const classes = Array.from({ length: 14 }, (_, index) => {
