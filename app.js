@@ -31,7 +31,20 @@ const KnitModel = (() => {
     stitches: Math.round(width * gauge),
     courses: Math.round(length * courseGauge)
   });
-  return { events, calculate };
+  function simulationState(step, needleCount = 8, rowCount = 4) {
+    const phases = ['针上升，针舌打开', '纱嘴垫入新纱', '针下降，旧线圈脱圈', '新线圈形成，织片下拉'];
+    const totalSteps = needleCount * rowCount * phases.length;
+    const safeStep = Math.max(0, Math.min(totalSteps - 1, Number(step) || 0));
+    const row = Math.floor(safeStep / (needleCount * phases.length));
+    const withinRow = safeStep % (needleCount * phases.length);
+    const slot = Math.floor(withinRow / phases.length);
+    const phase = withinRow % phases.length;
+    const direction = row % 2 === 0 ? 'right' : 'left';
+    const needle = direction === 'right' ? slot : needleCount - 1 - slot;
+    const completedInRow = phase === phases.length - 1 ? slot + 1 : slot;
+    return { step: safeStep, totalSteps, row, rowCount, slot, phase, phaseName: phases[phase], direction, needle, completedInRow };
+  }
+  return { events, calculate, simulationState };
 })();
 
 if (typeof module !== 'undefined') module.exports = KnitModel;
@@ -43,6 +56,7 @@ if (typeof document !== 'undefined') {
     stitches: ['02', '加针与停针', '本页任务：点“下一步”，观察左右各加1支后总针数怎样变化。'],
     density: ['03', '尺寸换算', '本页任务：移动横向密度，观察同样宽度为什么需要不同针数。'],
     pieces: ['04', '从下往上读织片', '本页任务：选择前幅、后幅或袖片，再逐段向上阅读。'],
+    simulator: ['05', '横机逐行模拟', '本页任务：先播放2.5D动画，再切换四层视图理解针、线、机头和针床。'],
     machine: ['档案', '准备购买的机器', '本页任务：区分铭牌确认、资料推断和仍待现场确认的信息。']
   };
   let mode = 'increase';
@@ -52,6 +66,9 @@ if (typeof document !== 'undefined') {
   let piece = 'front';
   let pieceStep = 0;
   let pieceTimer = null;
+  let simStep = 0;
+  let simTimer = null;
+  let simStructure = 'jersey';
 
   function stopStitches() {
     clearTimeout(stitchTimer);
@@ -274,32 +291,202 @@ if (typeof document !== 'undefined') {
     drawPiece();
   }));
 
+  const simPhaseCopy = [
+    ['针先上升', '针钩穿过旧线圈，针舌被旧线圈推开。', '旧线圈还挂在针杆上；这时还没有形成新线圈。'],
+    ['纱嘴送入新纱', '纱嘴跟着机头来到当前针位，把新纱放进打开的针钩。', '新纱进入针钩，但旧线圈仍未脱落。'],
+    ['针下降并脱圈', '针开始下降，针舌合上；旧线圈越过针舌，从针头脱下。', '旧线圈包住新纱，新纱被拉过旧线圈。'],
+    ['形成新线圈', '新线圈留在针钩里，牵拉机构把织片轻轻向下带。', '这一针完成；全部8针完成后，才算织完这一行。']
+  ];
+
+  function stopSimulator() {
+    clearTimeout(simTimer);
+    simTimer = null;
+    if ($('sim-play')) $('sim-play').textContent = '播放逐针动画';
+  }
+
+  function simLoopPath(x, y) {
+    return `M${x - 16} ${y} C${x - 14} ${y - 15},${x + 14} ${y - 15},${x + 16} ${y} C${x + 10} ${y + 12},${x - 10} ${y + 12},${x - 16} ${y}`;
+  }
+
+  function drawSimulator() {
+    const state = KnitModel.simulationState(simStep);
+    const x = 142 + state.needle * 65;
+    const atLastNeedle = state.slot === 7;
+    const finishedRows = state.row + (atLastNeedle && state.phase === 3 ? 1 : 0);
+    $('sim-row').textContent = `第 ${state.row + 1} / ${state.rowCount} 行`;
+    $('sim-direction').textContent = state.direction === 'right' ? '机头：左 → 右' : '机头：右 → 左';
+    $('sim-needle').textContent = `当前：第 ${state.needle + 1} 针`;
+    $('sim-phase').textContent = `${state.phase + 1} / 4 · ${state.phaseName}`;
+    $('sim-stage-title').textContent = simPhaseCopy[state.phase][0];
+    $('sim-stage-copy').textContent = simPhaseCopy[state.phase][1];
+    $('sim-stage-check').textContent = simPhaseCopy[state.phase][2];
+    $('sim-step').textContent = `${simStep + 1} / ${state.totalSteps}`;
+    $('sim-timeline').value = simStep;
+    $('sim-prev').disabled = simStep === 0;
+    $('sim-next').disabled = simStep === state.totalSteps - 1;
+
+    $('sim-carriage').setAttribute('transform', `translate(${x - 54} 50)`);
+    $('sim-carriage-label').textContent = state.direction === 'right' ? '机头 →' : '← 机头';
+    $('sim-carrier').setAttribute('transform', `translate(${x} 0)`);
+    $('sim-yarn').setAttribute('d', `M74 62 C96 34,${x - 26} 44,${x} 130`);
+    $('sim-direction-arrow').setAttribute('d', state.direction === 'right'
+      ? 'M150 34 H605 M590 22 L607 34 L590 46'
+      : 'M605 34 H150 M165 22 L148 34 L165 46');
+
+    $('sim-needles').innerHTML = Array.from({ length: 8 }, (_, index) => {
+      const active = index === state.needle;
+      const raised = active && state.phase < 2;
+      const nx = 142 + index * 65;
+      const top = raised ? 130 : 164;
+      const latchY = top + 22;
+      const latch = active && state.phase < 2
+        ? `<path d="M${nx} ${latchY} l14 -15" class="needle-latch open"/>`
+        : `<path d="M${nx} ${latchY} l3 20" class="needle-latch"/>`;
+      return `<g class="sim-needle${active ? ' current' : ''}"><path d="M${nx} 255 V${top} q0 -13 10 -13 q9 0 9 9 q0 7 -8 7" class="needle-body"/>${latch}<text x="${nx}" y="278" text-anchor="middle">${index + 1}</text></g>`;
+    }).join('');
+
+    let loops = '';
+    for (let row = 0; row < finishedRows; row += 1) {
+      for (let needle = 0; needle < 8; needle += 1) {
+        loops += `<path d="${simLoopPath(142 + needle * 65, 335 + row * 20)}" class="formed-loop"/>`;
+      }
+    }
+    const completedNeedles = state.phase === 3 ? state.slot + 1 : state.slot;
+    if (finishedRows === state.row) {
+      for (let slot = 0; slot < completedNeedles; slot += 1) {
+        const needle = state.direction === 'right' ? slot : 7 - slot;
+        loops += `<path d="${simLoopPath(142 + needle * 65, 335 + state.row * 20)}" class="formed-loop current-row"/>`;
+      }
+    }
+    if (state.phase >= 1) {
+      loops += `<path d="${simLoopPath(x, 315 + state.row * 20)}" class="new-loop phase-${state.phase}"/>`;
+    }
+    $('sim-loops').innerHTML = loops;
+    const fabricHeight = Math.max(8, finishedRows * 20);
+    $('sim-fabric').setAttribute('points', `112 342,632 342,610 ${342 + fabricHeight},134 ${342 + fabricHeight}`);
+  }
+
+  function advanceSimulator() {
+    const state = KnitModel.simulationState(simStep);
+    if (simStep >= state.totalSteps - 1) { stopSimulator(); return; }
+    simTimer = setTimeout(() => {
+      simStep += 1;
+      drawSimulator();
+      advanceSimulator();
+    }, Number($('sim-speed').value));
+  }
+
+  $('sim-play').addEventListener('click', () => {
+    if (simTimer) { stopSimulator(); return; }
+    const state = KnitModel.simulationState(simStep);
+    if (simStep >= state.totalSteps - 1) simStep = 0;
+    $('sim-play').textContent = '暂停动画';
+    drawSimulator();
+    advanceSimulator();
+  });
+  $('sim-prev').addEventListener('click', () => { stopSimulator(); simStep = Math.max(0, simStep - 1); drawSimulator(); });
+  $('sim-next').addEventListener('click', () => { stopSimulator(); simStep = Math.min(KnitModel.simulationState(0).totalSteps - 1, simStep + 1); drawSimulator(); });
+  $('sim-reset').addEventListener('click', () => { stopSimulator(); simStep = 0; drawSimulator(); });
+  $('sim-timeline').addEventListener('input', event => { stopSimulator(); simStep = Number(event.target.value); drawSimulator(); });
+
+  function drawNeedleStates(state) {
+    const classes = Array.from({ length: 14 }, (_, index) => {
+      if (state === 'added' && (index < 2 || index > 11)) return 'added';
+      if (state === 'held' && (index < 3 || index > 10)) return 'held';
+      return 'working';
+    });
+    $('level1-row').innerHTML = classes.map((kind, index) => `<span class="${kind}"><i></i><b>${index + 1}</b></span>`).join('');
+    const copy = {
+      working: '14根针全部工作：蓝色表示这一行会参与编织。',
+      added: '两边橙色针位是刚加入工作的针，织片会从两边变宽。',
+      held: '两边灰色针暂时保留线圈但不编织，中间工作区变窄。'
+    };
+    $('level1-copy').textContent = copy[state];
+    document.querySelectorAll('[data-needle-state]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.needleState === state)));
+  }
+  document.querySelectorAll('[data-needle-state]').forEach(button => button.addEventListener('click', () => drawNeedleStates(button.dataset.needleState)));
+
+  function drawBed3d() {
+    const active = (bed, index) => {
+      if (simStructure === 'jersey') return bed === 'front';
+      if (simStructure === 'rib') return bed === (index % 2 === 0 ? 'front' : 'rear');
+      return true;
+    };
+    ['front', 'rear'].forEach(bed => {
+      $(`bed-${bed}`).innerHTML = Array.from({ length: 12 }, (_, index) =>
+        `<span class="bed-needle ${active(bed, index) ? 'active' : 'rest'}" style="--i:${index}"><i></i><b>${index + 1}</b></span>`).join('');
+    });
+    const labels = {
+      jersey: ['单边', '本模型只让前床针工作，后床针休息。先用它理解最简单的一面成圈。'],
+      rib: ['1×1罗纹', '前床、后床交替工作：前1针、后1针重复。织物有明显弹性。'],
+      full: ['四平概念示意', '前后床都参与。不同地区和系统对“四平”的具体程序写法可能不同，实机前必须再核对。']
+    };
+    $('bed-structure-name').textContent = labels[simStructure][0];
+    $('bed-structure-copy').textContent = labels[simStructure][1];
+    document.querySelectorAll('[data-structure]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.structure === simStructure)));
+  }
+  document.querySelectorAll('[data-structure]').forEach(button => button.addEventListener('click', () => { simStructure = button.dataset.structure; drawBed3d(); }));
+  $('bed-angle').addEventListener('input', event => {
+    $('bed-assembly').style.setProperty('--turn', `${event.target.value}deg`);
+    $('bed-angle-out').textContent = `${event.target.value}°`;
+  });
+
+  const simLayerButtons = [...document.querySelectorAll('[data-sim-layer]')];
+  function selectSimLayer(button) {
+    const layer = button.dataset.simLayer;
+    if (layer !== 'row') stopSimulator();
+    simLayerButtons.forEach(item => {
+      item.setAttribute('aria-selected', String(item === button));
+      item.tabIndex = item === button ? 0 : -1;
+    });
+    document.querySelectorAll('[data-sim-panel]').forEach(panel => { panel.hidden = panel.dataset.simPanel !== layer; });
+  }
+  simLayerButtons.forEach((button, index) => {
+    button.addEventListener('click', () => selectSimLayer(button));
+    button.addEventListener('keydown', event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      let nextIndex = index;
+      if (event.key === 'ArrowRight') nextIndex = (index + 1) % simLayerButtons.length;
+      if (event.key === 'ArrowLeft') nextIndex = (index - 1 + simLayerButtons.length) % simLayerButtons.length;
+      if (event.key === 'Home') nextIndex = 0;
+      if (event.key === 'End') nextIndex = simLayerButtons.length - 1;
+      selectSimLayer(simLayerButtons[nextIndex]);
+      simLayerButtons[nextIndex].focus();
+    });
+  });
+  selectSimLayer(simLayerButtons.find(button => button.getAttribute('aria-selected') === 'true'));
+
   function route() {
     let id = location.hash.slice(1) || 'stitches';
     if (id === 'lesson-01') id = 'stitches';
     if (id === 'lesson-02') id = 'density';
-    if (!['map', 'stitches', 'density', 'pieces', 'machine'].includes(id)) id = 'stitches';
+    if (!['map', 'stitches', 'density', 'pieces', 'simulator', 'machine'].includes(id)) id = 'stitches';
     stopStitches();
     stopPiece();
+    stopSimulator();
     document.querySelectorAll('.page').forEach(section => section.hidden = section.id !== id);
     document.querySelectorAll('[data-page]').forEach(link => {
       if (link.dataset.page === id) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     });
-    const position = ['map', 'stitches', 'density', 'pieces', 'machine'].indexOf(id) + 1;
+    const position = ['map', 'stitches', 'density', 'pieces', 'simulator', 'machine'].indexOf(id) + 1;
     $('current-number').textContent = routeInfo[id][0];
     $('current-name').textContent = routeInfo[id][1];
     $('current-task').textContent = routeInfo[id][2];
-    $('progress-text').textContent = `${position} / 5`;
+    $('progress-text').textContent = `${position} / 6`;
     $('course-progress').value = position;
-    $('course-progress').textContent = `${position} / 5`;
+    $('course-progress').textContent = `${position} / 6`;
     document.title = document.getElementById(id).querySelector('h1').textContent + ' · 织学堂';
   }
   window.addEventListener('hashchange', route);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { stopStitches(); stopPiece(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { stopStitches(); stopPiece(); stopSimulator(); } });
   drawStitches();
   setZone('identity');
   calculateDensity();
   drawPiece();
+  drawNeedleStates('working');
+  drawSimulator();
+  drawBed3d();
   route();
 }
