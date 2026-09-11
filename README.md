@@ -30,6 +30,7 @@ docker compose up -d --build
 - 已完成：第4课《横机动作实验室》四层模拟，并新增“图纸→衣片”逐转成形入口
 - 已建立：拟购慈星CX2-52C-U脱敏设备档案
 - 已升级：7.0版可在两张参考图纸之间切换，分别从零播放前幅、后幅和袖片的形成；整机与内部特写仍可随时切换
+- 已升级：8.0详细教学版同步显示纸上版图、实机悬挂画面、当前动作、阶段原因、纸面含义、机器动作和逐转算式，并能只播放到下一阶段
 - 下一课：把1×1罗纹、单边、四平拆成逐针成圈过程
 - 待确认：实机控制系统、制版软件版本和测试程序文件后缀
 
@@ -42,7 +43,7 @@ docker compose up -d --build
 ## 阅读顺序
 
 1. 打开 `index.html`，按左侧导航学习可视化课程。
-2. 阅读 `docs/lesson-01.md` 至 `docs/lesson-03.md` 复习课程。
+2. 阅读 `docs/lesson-01.md` 至 `docs/lesson-04.md` 复习课程。
 3. 查看 `CURRICULUM.md` 了解完整学习路线。
 4. 换用其他 AI 时，让它先读 `AI_HANDOFF.md` 和 `AGENTS.md`。
 
@@ -57,6 +58,7 @@ docker compose up -d --build
 - `docs/LEARNING-GUIDE.md`：零基础学习方法、课程边界与2D／3D模拟路线
 - `docs/simulator-2-5d.md`：横机四层模拟的动作、限制与验收说明
 - `data/`：经过脱敏的练习和设备数据
+- `data/reference-sheets-teaching-transcription.json`：两张图纸的脱敏结构化转录、证据等级和教学假设
 - `tests/`：教学模型的自动验算
 - `Dockerfile`、`compose.yaml`：服务器容器部署
 - `DEPLOY.md`：域名、HTTPS和更新说明

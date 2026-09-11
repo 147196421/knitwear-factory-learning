@@ -58,51 +58,75 @@ const KnitModel = (() => {
       sleeve: { label: '袖片', kind: 'sleeve', start: 55, body: 111, total: 73, source: '照片可辨认：开55支、袖身73转、上部111支' }
     }
   };
+  function garmentSegments(plan) {
+    const at = ratio => Math.round(plan.total * ratio);
+    if (plan.kind === 'sleeve') return [
+      { key: 'cuff', name: '袖口罗纹', start: 0, end: at(.1), paper: `先按约${plan.start}支起针，建立有弹性的袖口。`, machine: '起底装置和牵拉先稳定织片；实际罗纹组织、转数和度目仍待原纸确认。', reason: '袖口要能贴合手腕，也要给后面的袖身加针留下起点。' },
+      { key: 'widen', name: '袖身分段加针', start: at(.1) + 1, end: at(.7), paper: `从约${plan.start}支逐步加宽到约${plan.body}支。`, machine: '机头继续往返，在指定行程把左右边针逐步加入工作。', reason: '手臂越往上越粗，所以袖片两边需要大致对称地增加针位。' },
+      { key: 'cap', name: '袖山分段收针', start: at(.7) + 1, end: at(.96), paper: '开始逐段收窄袖山；精确停针次序必须回看清晰原纸。', machine: '边缘针逐步退出当前工作区，中间继续编织，形成袖山弧线。', reason: '袖山要与前后幅夹圈位置配合，不能把示意曲线直接当成生产收针表。' },
+      { key: 'cap-top', name: '袖山顶与结束', start: at(.96) + 1, end: plan.total, paper: `到约第${plan.total}转结束这片袖。`, machine: '完成最后工作区并按正式程序执行收尾；本动画不模拟落布与安全动作。', reason: '这里只确认“逐步变窄并结束”，不虚构照片中看不清的最后几次停针。' }
+    ];
+    return [
+      { key: 'rib', name: '起底与下摆罗纹', start: 0, end: at(.08), paper: `按约${plan.start}支开针，先建立下摆。`, machine: '完成起底与下摆组织，织片从针床向下挂出。', reason: '稳定起织并给衣身建立底边；罗纹转数、针法和度目需以原纸为准。' },
+      { key: 'body', name: '身段直织', start: at(.08) + 1, end: at(.64), paper: `主体保持约${plan.body}支向上直织。`, machine: '工作针范围基本不变，机头持续左右往返形成主体。', reason: '这是衣片最长的稳定区域；针数不变不等于机器停止，而是继续增加转数。' },
+      { key: 'armhole', name: '夹位分段收针', start: at(.64) + 1, end: at(.78), paper: '两侧开始收窄，形成腋下到肩部的夹位。', machine: '左右边缘的工作针逐步减少，中间针继续编织。', reason: '身体到肩部需要变窄；精确“几转收几支”目前仍待清晰原纸复核。' },
+      { key: 'upper', name: '上胸直织', start: at(.78) + 1, end: at(.86), paper: '夹位收窄后，剩余工作区短暂保持。', machine: '在较窄的针区继续往返，为开领和收肩准备高度。', reason: '这一小段决定夹圈上方高度，但当前只做阶段教学。' },
+      { key: 'neck', name: plan.neck === 'front' ? '前领与左右肩' : '后领与左右肩', start: at(.86) + 1, end: at(.98), paper: plan.neck === 'front' ? '中间逐步开出较深前领，左右肩分开继续。' : '中间开出较浅后领，左右肩分开继续。', machine: '中间领位不再成圈或按程序收针，左右肩区继续工作。', reason: '领窝使一整排变成左右两个工作区；前领通常比后领深。' },
+      { key: 'shoulder', name: '肩部收针与结束', start: at(.98) + 1, end: plan.total, paper: `到约第${plan.total}转完成${plan.label}。`, machine: '完成肩部最后工作区并按正式程序收尾；本动画不模拟落布。', reason: '总转数来自照片可辨认值，肩斜细分仍不能凭模糊照片编造。' }
+    ];
+  }
+  function garmentShape(plan, safeCourse) {
+    const segments = garmentSegments(plan);
+    const segment = segments.find(item => safeCourse >= item.start && safeCourse <= item.end) || segments.at(-1);
+    const span = Math.max(1, segment.end - segment.start);
+    const within = Math.max(0, Math.min(1, (safeCourse - segment.start) / span));
+    const progress = safeCourse / plan.total;
+    let stitches = plan.start;
+    let stage = segment.name;
+    const stageKey = segment.key;
+    let neckOpen = 0;
+    if (plan.kind === 'sleeve') {
+      if (stageKey === 'widen') stitches = Math.round(plan.start + (plan.body - plan.start) * within);
+      else if (stageKey === 'cap') stitches = Math.round(plan.body * (1 - .72 * within));
+      else if (stageKey === 'cap-top') {
+        stitches = Math.round(plan.body * .28);
+        if (safeCourse === plan.total) stage = '袖片完成';
+      }
+    } else {
+      if (stageKey === 'rib') stitches = Math.round(plan.start + (plan.body - plan.start) * within);
+      else if (stageKey === 'body') stitches = plan.body;
+      else if (stageKey === 'armhole') stitches = Math.round(plan.body * (1 - .12 * within));
+      else if (stageKey === 'upper') stitches = Math.round(plan.body * .88);
+      else if (stageKey === 'neck') {
+        stitches = Math.round(plan.body * .88);
+        neckOpen = within * (plan.neck === 'front' ? .38 : .28);
+      } else if (stageKey === 'shoulder') {
+        stitches = Math.round(plan.body * .88);
+        neckOpen = plan.neck === 'front' ? .38 : .28;
+        if (safeCourse === plan.total) stage = `${plan.label}完成`;
+      }
+    }
+    return { progress, stitches, stage, stageKey, neckOpen };
+  }
   function garmentState(sheet, piece, course) {
     const plan = garmentPlans[sheet]?.[piece] || garmentPlans.sheet1.front;
     const safeCourse = Math.max(0, Math.min(plan.total, Math.round(Number(course) || 0)));
-    const progress = safeCourse / plan.total;
-    let stitches = plan.start;
-    let stage = '起底与开针';
-    let neckOpen = 0;
-    if (plan.kind === 'sleeve') {
-      if (progress < .1) stage = '袖口罗纹';
-      else if (progress < .7) {
-        stage = '袖身分段加针';
-        stitches = Math.round(plan.start + (plan.body - plan.start) * ((progress - .1) / .6));
-      } else if (progress < .96) {
-        stage = '袖山分段收针';
-        stitches = Math.round(plan.body * (1 - .72 * ((progress - .7) / .26)));
-      } else {
-        stage = safeCourse === plan.total ? '袖片完成' : '袖山顶收针';
-        stitches = Math.round(plan.body * .28);
-      }
-    } else {
-      if (progress < .08) {
-        stage = '起底与罗纹';
-        stitches = Math.round(plan.start + (plan.body - plan.start) * (progress / .08));
-      } else if (progress < .64) {
-        stage = '身段直织';
-        stitches = plan.body;
-      } else if (progress < .78) {
-        stage = '夹位分段收针';
-        stitches = Math.round(plan.body * (1 - .12 * ((progress - .64) / .14)));
-      } else if (progress < .86) {
-        stage = '上胸直织';
-        stitches = Math.round(plan.body * .88);
-      } else if (progress < .98) {
-        stage = plan.neck === 'front' ? '前领与肩部' : '后领与肩部';
-        stitches = Math.round(plan.body * .88);
-        neckOpen = (progress - .86) / .12 * (plan.neck === 'front' ? .38 : .28);
-      } else {
-        stage = safeCourse === plan.total ? `${plan.label}完成` : '肩部收针';
-        stitches = Math.round(plan.body * .88);
-        neckOpen = plan.neck === 'front' ? .38 : .28;
-      }
-    }
-    return { ...plan, course: safeCourse, progress, stitches, stage, neckOpen, direction: safeCourse % 2 === 0 ? 'right' : 'left' };
+    const shape = garmentShape(plan, safeCourse);
+    const previous = garmentShape(plan, Math.max(0, safeCourse - 1)).stitches;
+    const delta = safeCourse === 0 ? 0 : shape.stitches - previous;
+    const segments = garmentSegments(plan);
+    const segment = segments.find(item => item.key === shape.stageKey) || segments[0];
+    const action = safeCourse === 0 ? `开针约${plan.start}支`
+      : delta > 0 ? `工作区增加约${delta}支`
+      : delta < 0 ? `工作区减少约${Math.abs(delta)}支`
+      : '针数暂时不变，继续织1转';
+    const equation = safeCourse === 0 ? `起点＝${plan.start}支`
+      : delta === 0 ? `${previous}支 → ${shape.stitches}支（针数不变）`
+      : `${previous} ${delta > 0 ? '+' : '−'} ${Math.abs(delta)} ＝ ${shape.stitches}支`;
+    const evidence = safeCourse === 0 || safeCourse === plan.total ? '照片可辨认节点' : '教学推演过程';
+    return { ...plan, ...shape, course: safeCourse, previous, delta, action, equation, evidence, segments, segment, direction: safeCourse % 2 === 0 ? 'right' : 'left' };
   }
-  return { events, calculate, simulationState, garmentPlans, garmentState };
+  return { events, calculate, simulationState, garmentPlans, garmentSegments, garmentState };
 })();
 
 if (typeof module !== 'undefined') module.exports = KnitModel;
@@ -132,6 +156,7 @@ if (typeof document !== 'undefined') {
   let garmentPiece = 'front';
   let garmentCourse = 0;
   let garmentTimer = null;
+  let garmentStopAt = null;
 
   function stopStitches() {
     clearTimeout(stitchTimer);
@@ -473,7 +498,9 @@ if (typeof document !== 'undefined') {
   function stopGarment() {
     clearTimeout(garmentTimer);
     garmentTimer = null;
-    if ($('garment-play')) $('garment-play').textContent = '播放成形';
+    garmentStopAt = null;
+    if ($('garment-play')) $('garment-play').textContent = '播放到完成';
+    if ($('garment-stage-play')) $('garment-stage-play').textContent = '播放到下一阶段';
   }
 
   function drawGarment() {
@@ -507,6 +534,31 @@ if (typeof document !== 'undefined') {
     $('garment-course').textContent = `第 ${state.course} / ${state.total} 转`;
     $('garment-stitches').textContent = `当前约 ${state.stitches} 支`;
     $('garment-source').textContent = `${KnitModel.garmentPlans[garmentSheet].label} · ${state.label}｜${state.source}`;
+    $('garment-action').textContent = state.action;
+    $('garment-reason').textContent = state.segment.reason;
+    $('garment-paper-copy').textContent = state.segment.paper;
+    $('garment-machine-copy').textContent = `${state.direction === 'right' ? '机头由左向右' : '机头由右向左'}。${state.segment.machine}`;
+    $('garment-equation').textContent = state.equation;
+    $('garment-direction-text').textContent = `本转方向：${state.direction === 'right' ? '左 → 右' : '右 → 左'}`;
+    $('garment-evidence').textContent = state.evidence;
+    $('garment-evidence').className = `evidence ${state.evidence === '照片可辨认节点' ? 'confirmed' : 'concept'}`;
+    const paperOutlines = {
+      front: 'M50 292V112L76 82L85 43H109Q130 68 151 43H175L184 82L210 112V292Z',
+      back: 'M50 292V112L76 82L85 43H111Q130 53 149 43H175L184 82L210 112V292Z',
+      sleeve: 'M91 292L47 121L74 91L103 43H157L186 91L213 121L169 292Z'
+    };
+    const paperPath = paperOutlines[garmentPiece];
+    $('garment-paper-outline').setAttribute('d', paperPath);
+    $('garment-paper-clip-path').setAttribute('d', paperPath);
+    const paperHeight = 249 * state.progress;
+    $('garment-paper-progress').setAttribute('y', (292 - paperHeight).toFixed(1));
+    $('garment-paper-progress').setAttribute('height', paperHeight.toFixed(1));
+    $('garment-paper-title').textContent = `${state.label}：纸上读到第${state.course}转，${state.stage}`;
+    $('garment-stage-list').innerHTML = state.segments.map(segment => {
+      const active = segment.key === state.stageKey;
+      const done = state.course > segment.end;
+      return `<button data-garment-course="${segment.start}" class="${done ? 'done' : ''}"${active ? ' aria-current="step"' : ''}><span>${segment.name}</span><small>${segment.start}–${segment.end}转</small></button>`;
+    }).join('');
     $('garment-timeline').max = state.total;
     $('garment-timeline').value = state.course;
     $('garment-prev').disabled = state.course === 0;
@@ -517,7 +569,8 @@ if (typeof document !== 'undefined') {
 
   function advanceGarment() {
     const state = KnitModel.garmentState(garmentSheet, garmentPiece, garmentCourse);
-    if (garmentCourse >= state.total) { stopGarment(); return; }
+    const target = garmentStopAt ?? state.total;
+    if (garmentCourse >= target || garmentCourse >= state.total) { stopGarment(); return; }
     garmentTimer = setTimeout(() => {
       garmentCourse += 1;
       drawGarment();
@@ -529,14 +582,35 @@ if (typeof document !== 'undefined') {
     if (garmentTimer) { stopGarment(); return; }
     const state = KnitModel.garmentState(garmentSheet, garmentPiece, garmentCourse);
     if (garmentCourse >= state.total) garmentCourse = 0;
-    $('garment-play').textContent = '暂停成形';
+    garmentStopAt = state.total;
+    $('garment-play').textContent = '暂停播放';
     drawGarment();
+    advanceGarment();
+  });
+  $('garment-stage-play').addEventListener('click', () => {
+    if (garmentTimer) { stopGarment(); return; }
+    const state = KnitModel.garmentState(garmentSheet, garmentPiece, garmentCourse);
+    let nextBoundary = state.segments.find(segment => segment.end > garmentCourse);
+    if (!nextBoundary) {
+      garmentCourse = 0;
+      nextBoundary = state.segments[0];
+      drawGarment();
+    }
+    garmentStopAt = nextBoundary.end;
+    $('garment-stage-play').textContent = `暂停（到${nextBoundary.end}转）`;
     advanceGarment();
   });
   $('garment-prev').addEventListener('click', () => { stopGarment(); garmentCourse = Math.max(0, garmentCourse - 1); drawGarment(); });
   $('garment-next').addEventListener('click', () => { stopGarment(); garmentCourse = Math.min(KnitModel.garmentState(garmentSheet, garmentPiece, 0).total, garmentCourse + 1); drawGarment(); });
   $('garment-reset').addEventListener('click', () => { stopGarment(); garmentCourse = 0; drawGarment(); });
   $('garment-timeline').addEventListener('input', event => { stopGarment(); garmentCourse = Number(event.target.value); drawGarment(); });
+  $('garment-stage-list').addEventListener('click', event => {
+    const button = event.target.closest('[data-garment-course]');
+    if (!button) return;
+    stopGarment();
+    garmentCourse = Number(button.dataset.garmentCourse);
+    drawGarment();
+  });
   document.querySelectorAll('[data-garment-sheet]').forEach(button => button.addEventListener('click', () => { stopGarment(); garmentSheet = button.dataset.garmentSheet; garmentCourse = 0; drawGarment(); }));
   document.querySelectorAll('[data-garment-piece]').forEach(button => button.addEventListener('click', () => { stopGarment(); garmentPiece = button.dataset.garmentPiece; garmentCourse = 0; drawGarment(); }));
 

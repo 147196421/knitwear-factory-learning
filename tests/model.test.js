@@ -33,11 +33,19 @@ assert.deepEqual(
 const sheet1FrontEnd = model.garmentState("sheet1", "front", 94);
 assert.equal(sheet1FrontEnd.stage, "前幅完成");
 assert.ok(sheet1FrontEnd.neckOpen > 0);
+assert.equal(sheet1FrontEnd.evidence, "照片可辨认节点");
+assert.equal(sheet1FrontEnd.segments.length, 6);
 assert.equal(model.garmentState("sheet1", "front", 999).course, 94);
 
 const sheet1SleeveMid = model.garmentState("sheet1", "sleeve", 35);
 assert.ok(sheet1SleeveMid.stitches > 55);
+assert.equal(sheet1SleeveMid.segments.length, 4);
 assert.equal(model.garmentState("sheet1", "sleeve", 59).stage, "袖片完成");
+
+const sheet1FrontStraight = model.garmentState("sheet1", "front", 30);
+assert.equal(sheet1FrontStraight.stageKey, "body");
+assert.equal(sheet1FrontStraight.delta, 0);
+assert.match(sheet1FrontStraight.equation, /针数不变/);
 
 const sheet2SleeveEnd = model.garmentState("sheet2", "sleeve", 73);
 assert.deepEqual(

@@ -1,0 +1,30 @@
+{
+  "purpose": "两张参考工艺单的脱敏教学转录，供图纸到衣片动画和后续AI接手使用",
+  "warning": "不是完整吓数、不是上机程序。只保存照片中较清楚的少量数值；分段边界和轮廓变化属于教学推演。",
+  "units": {
+    "stitches": "支，当前按工作针数量理解",
+    "courses": "转，计数口径仍须结合原厂和实际工厂习惯复核"
+  },
+  "sheets": {
+    "sheet1": {
+      "public_label": "图纸1",
+      "front": { "cast_on_stitches": 163, "approx_total_courses": 94, "confidence": "照片可辨认" },
+      "back": { "cast_on_stitches": 163, "approx_total_courses": 95, "body_stitches_for_animation": 160, "confidence": "开针与总转数较清楚；身段宽度待复核" },
+      "sleeve": { "cast_on_stitches": 55, "approx_total_courses": 59, "upper_width_stitches": 111, "confidence": "照片可辨认" }
+    },
+    "sheet2": {
+      "public_label": "图纸2 · 圆领款",
+      "front": { "cast_on_stitches": 154, "approx_total_courses": 79, "body_stitches_near_diagram": 166, "confidence": "照片可辨认；166的确切工艺含义仍需原纸复核" },
+      "back": { "cast_on_stitches": 150, "approx_total_courses": 77, "body_stitches_near_diagram": 162, "confidence": "照片可辨认；162的确切工艺含义仍需原纸复核" },
+      "sleeve": { "cast_on_stitches": 55, "approx_total_courses": 73, "upper_width_stitches": 111, "confidence": "照片可辨认" }
+    }
+  },
+  "teaching_assumptions": [
+    "身片按下摆、身段、夹位、上胸、领肩、结束六段讲解。",
+    "袖片按袖口、袖身加针、袖山收针、袖山顶四段讲解。",
+    "阶段分界按总转数比例生成，只帮助理解，不代表原纸分段转数。",
+    "中间各转的针数由起点与可辨认宽度插值得到，不代表真实加减针节奏。",
+    "横机画面采用真实悬挂方向：新织行靠近针床，较早织片向下移动。"
+  ],
+  "privacy": "不保存原图、联系方式、款号、生产编号、文件名、机器序列号、私人关系或地点。"
+}
