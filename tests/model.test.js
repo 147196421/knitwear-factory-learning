@@ -13,6 +13,20 @@ assert.equal(hold.at(-1).held, 94);
 
 assert.deepEqual(model.calculate(18, 9, 20, 4.5), { stitches: 162, courses: 90 });
 
+const auditDefault = model.auditDimensions({ measurement: "flat", unit: "in", chest: 18, length: 24, shoulder: 5.5, stitchGauge: 9, courseGauge: 4.5, edgeEach: 2, repeat: 2 });
+assert.deepEqual(
+  { flatWidthIn: auditDefault.flatWidthIn, baseChest: auditDefault.baseChest, finalStitches: auditDefault.finalStitches, finalCourses: auditDefault.finalCourses, shoulderStitches: auditDefault.shoulderStitches, reverseChestIn: auditDefault.reverseChestIn },
+  { flatWidthIn: 18, baseChest: 162, finalStitches: 166, finalCourses: 108, shoulderStitches: 50, reverseChestIn: 18 }
+);
+const auditCircumference = model.auditDimensions({ measurement: "circumference", unit: "cm", chest: 91.44, length: 60.96, shoulder: 13.97, stitchGauge: 9, courseGauge: 4.5, edgeEach: 2, repeat: 2 });
+assert.ok(Math.abs(auditCircumference.flatWidthIn - 18) < 1e-9);
+assert.equal(auditCircumference.finalStitches, 166);
+const auditRepeatRounding = model.auditDimensions({ measurement: "flat", unit: "in", chest: 18, length: 24, shoulder: 5.5, stitchGauge: 9, courseGauge: 4.5, edgeEach: 2, repeat: 4 });
+assert.deepEqual(
+  { withEdges: auditRepeatRounding.withEdges, repeatAdjustment: auditRepeatRounding.repeatAdjustment, finalStitches: auditRepeatRounding.finalStitches },
+  { withEdges: 166, repeatAdjustment: 2, finalStitches: 168 }
+);
+
 const simStart = model.simulationState(0);
 assert.deepEqual(
   { row: simStart.row, needle: simStart.needle, phase: simStart.phase, direction: simStart.direction, total: simStart.totalSteps },
@@ -66,4 +80,4 @@ assert.deepEqual(
   { course: 73, total: 73, stage: "袖片完成" }
 );
 
-console.log("教学模型验算通过：针数变化、密度换算、三种组织针床分配、逐针往返、两张图纸的六片成形");
+console.log("教学模型验算通过：针数变化、尺寸人工验算、三种组织针床分配、逐针往返、两张图纸的六片成形");

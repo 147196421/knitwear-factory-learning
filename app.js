@@ -31,6 +31,35 @@ const KnitModel = (() => {
     stitches: Math.round(width * gauge),
     courses: Math.round(length * courseGauge)
   });
+  function auditDimensions(input) {
+    const unit = input.unit === 'cm' ? 'cm' : 'in';
+    const toInches = value => unit === 'cm' ? Number(value) / 2.54 : Number(value);
+    const chestEnteredIn = toInches(input.chest);
+    const flatWidthIn = input.measurement === 'circumference' ? chestEnteredIn / 2 : chestEnteredIn;
+    const lengthIn = toInches(input.length);
+    const shoulderIn = toInches(input.shoulder);
+    const stitchGauge = Number(input.stitchGauge);
+    const courseGauge = Number(input.courseGauge);
+    const edgeEach = Math.round(Number(input.edgeEach));
+    const repeat = Math.max(1, Math.round(Number(input.repeat)));
+    const baseChestRaw = flatWidthIn * stitchGauge;
+    const baseChest = Math.round(baseChestRaw);
+    const withEdges = baseChest + edgeEach * 2;
+    const finalStitches = Math.ceil(withEdges / repeat) * repeat;
+    const bodyCoursesRaw = lengthIn * courseGauge;
+    const finalCourses = Math.round(bodyCoursesRaw);
+    const shoulderRaw = shoulderIn * stitchGauge;
+    const shoulderStitches = Math.round(shoulderRaw);
+    const usableBodyStitches = finalStitches - edgeEach * 2;
+    return {
+      unit, chestEnteredIn, flatWidthIn, lengthIn, shoulderIn, stitchGauge, courseGauge,
+      edgeEach, repeat, baseChestRaw, baseChest, withEdges, finalStitches,
+      repeatAdjustment: finalStitches - withEdges, bodyCoursesRaw, finalCourses,
+      shoulderRaw, shoulderStitches, reverseChestIn: usableBodyStitches / stitchGauge,
+      reverseLengthIn: finalCourses / courseGauge,
+      reverseShoulderIn: shoulderStitches / stitchGauge
+    };
+  }
   function simulationState(step, needleCount = 8, rowCount = 4) {
     const phases = ['针上升，针舌打开', '纱嘴垫入新纱', '针下降，旧线圈脱圈', '新线圈形成，织片下拉'];
     const totalSteps = needleCount * rowCount * phases.length;
@@ -64,7 +93,7 @@ const KnitModel = (() => {
     full: {
       label: '四平概念', short: '前后床分行参与',
       plain: '先把它看成前、后针床都参与的一类双面结构。画面用前后床轮流整排成圈帮助理解厚度来源。',
-      paper: '看到“四平”不能只凭名称抄程序；不同地区、师傅和系统的具体叫法、走针可能不同。',
+      paper: '看到“四平”不能只凭名称抄程序；不同地区、工厂和系统的具体叫法、走针可能不同。',
       machine: '本模型用前床一行、后床一行交替说明空间关系，不代表慈星机器的正式四平程序。',
       compare: ['通常更厚实', '正反面更接近', '耗纱与密度需另做试片'],
       bedFor: (_needle, row) => row % 2 === 0 ? 'front' : 'rear'
@@ -163,7 +192,7 @@ const KnitModel = (() => {
     const evidence = safeCourse === 0 || safeCourse === plan.total ? '照片可辨认节点' : '教学推演过程';
     return { ...plan, ...shape, course: safeCourse, previous, delta, action, equation, evidence, segments, segment, direction: safeCourse % 2 === 0 ? 'right' : 'left' };
   }
-  return { events, calculate, simulationState, structurePlans, structureState, garmentPlans, garmentSegments, garmentState };
+  return { events, calculate, auditDimensions, simulationState, structurePlans, structureState, garmentPlans, garmentSegments, garmentState };
 })();
 
 if (typeof module !== 'undefined') module.exports = KnitModel;
@@ -176,7 +205,8 @@ if (typeof document !== 'undefined') {
     density: ['03', '尺寸换算', '本页任务：移动横向密度，观察同样宽度为什么需要不同针数。'],
     pieces: ['04', '从下往上读织片', '本页任务：选择前幅、后幅或袖片，再逐段向上阅读。'],
     structures: ['05', '认识三种组织', '本页任务：切换单边、1×1罗纹和四平概念，观察前后针床谁在成圈。'],
-    simulator: ['06', '图纸到衣片', '本页任务：选择图纸和衣片，从第0转开始看机头往返、针数变化和衣片成形。'],
+    audit: ['06', '尺寸人工验算', '本页任务：输入胸阔、身长和样片密度，按四步算出针数与转数，再反算尺寸。'],
+    simulator: ['07', '图纸到衣片', '本页任务：选择图纸和衣片，从第0转开始看机头往返、针数变化和衣片成形。'],
     machine: ['档案', '准备购买的机器', '本页任务：区分铭牌确认、资料推断和仍待现场确认的信息。']
   };
   let mode = 'increase';
@@ -198,6 +228,8 @@ if (typeof document !== 'undefined') {
   let structureKind = 'jersey';
   let structureStep = 0;
   let structureTimer = null;
+  let auditStep = 0;
+  let auditUnit = 'in';
   let sheetPreviewScale = 1;
   let sheetPreviewTrigger = null;
 
@@ -838,6 +870,168 @@ if (typeof document !== 'undefined') {
     $('structure-feedback').className = correct ? 'correct' : 'wrong';
   }));
 
+  const auditFieldIds = ['audit-chest', 'audit-length', 'audit-shoulder', 'audit-stitch-gauge', 'audit-course-gauge', 'audit-edge', 'audit-repeat'];
+  function auditValues() {
+    return {
+      measurement: $('audit-measurement').value,
+      unit: $('audit-unit').value,
+      chest: Number($('audit-chest').value),
+      length: Number($('audit-length').value),
+      shoulder: Number($('audit-shoulder').value),
+      stitchGauge: Number($('audit-stitch-gauge').value),
+      courseGauge: Number($('audit-course-gauge').value),
+      edgeEach: Number($('audit-edge').value),
+      repeat: Number($('audit-repeat').value)
+    };
+  }
+
+  function auditErrors(values) {
+    const toInches = value => values.unit === 'cm' ? value / 2.54 : value;
+    const errors = {};
+    const checkRange = (id, value, min, max, label) => {
+      if (!Number.isFinite(value) || value <= 0) errors[id] = `${label}必须填写大于0的数字。`;
+      else if (value < min || value > max) errors[id] = `${label}超出本课练习范围，请填写${min}到${max}之间的值。`;
+    };
+    checkRange('audit-chest', toInches(values.chest), 5, 100, '胸部尺寸');
+    checkRange('audit-length', toInches(values.length), 5, 80, '身长');
+    checkRange('audit-shoulder', toInches(values.shoulder), 1, 20, '单边肩宽');
+    checkRange('audit-stitch-gauge', values.stitchGauge, 1, 30, '横密');
+    checkRange('audit-course-gauge', values.courseGauge, 1, 50, '纵密');
+    if (!Number.isInteger(values.edgeEach) || values.edgeEach < 0 || values.edgeEach > 10) errors['audit-edge'] = '每边边针必须填写0到10之间的整数。';
+    if (!Number.isInteger(values.repeat) || values.repeat < 1 || values.repeat > 24) errors['audit-repeat'] = '组织循环必须填写1到24之间的整数。';
+    return errors;
+  }
+
+  function showAuditFieldError(id, message = '') {
+    const input = $(id);
+    const error = $(`${id}-error`);
+    input.setAttribute('aria-invalid', String(Boolean(message)));
+    error.textContent = message;
+  }
+
+  function auditDimensionText(inches, unit, decimals = 2) {
+    const value = unit === 'cm' ? inches * 2.54 : inches;
+    return `${value.toFixed(decimals)}${unit === 'cm' ? '厘米' : '英寸'}`;
+  }
+
+  function selectAuditStep(step) {
+    auditStep = Math.max(0, Math.min(3, Number(step) || 0));
+    document.querySelectorAll('[data-audit-step]').forEach(button => {
+      if (Number(button.dataset.auditStep) === auditStep) button.setAttribute('aria-current', 'step');
+      else button.removeAttribute('aria-current');
+    });
+    drawAudit(false);
+  }
+
+  function drawAudit(showSummary = false) {
+    const values = auditValues();
+    const errors = auditErrors(values);
+    if (Object.keys(errors).length) {
+      if (showSummary) {
+        auditFieldIds.forEach(id => showAuditFieldError(id, errors[id] || ''));
+        $('audit-error-list').innerHTML = Object.entries(errors).map(([id, message]) => `<li><a href="#${id}">${message}</a></li>`).join('');
+        $('audit-errors').hidden = false;
+        $('audit-errors').focus();
+      }
+      return false;
+    }
+    auditFieldIds.forEach(id => showAuditFieldError(id));
+    $('audit-errors').hidden = true;
+    const result = KnitModel.auditDimensions(values);
+    const unit = values.unit;
+    $('audit-flat-result').textContent = auditDimensionText(result.flatWidthIn, unit);
+    $('audit-base-result').textContent = `${result.baseChest}支`;
+    $('audit-final-result').textContent = `${result.finalStitches}支`;
+    $('audit-course-result').textContent = `${result.finalCourses}转`;
+    $('audit-shoulder-result').textContent = `${result.shoulderStitches}支`;
+    $('audit-chest-label').textContent = `胸阔${auditDimensionText(result.flatWidthIn, unit)}`;
+    $('audit-length-label').textContent = `身长${auditDimensionText(result.lengthIn, unit)}`;
+    $('audit-shoulder-label').textContent = `单边肩宽${auditDimensionText(result.shoulderIn, unit)}`;
+    $('audit-step-one').textContent = values.measurement === 'circumference'
+      ? `${auditDimensionText(result.chestEnteredIn, unit)}胸围 ÷ 2`
+      : `${auditDimensionText(result.flatWidthIn, unit)}胸阔`;
+    $('audit-step-two').textContent = `${result.flatWidthIn.toFixed(2)}×${result.stitchGauge}＝${result.baseChestRaw.toFixed(1)}支`;
+    $('audit-step-three').textContent = `${result.baseChest}+${result.edgeEach * 2}+${result.repeatAdjustment}＝${result.finalStitches}支`;
+    $('audit-step-four').textContent = `(${result.finalStitches}−${result.edgeEach * 2})÷${result.stitchGauge}＝${result.reverseChestIn.toFixed(2)}英寸`;
+    $('audit-reverse-chest').textContent = auditDimensionText(result.reverseChestIn, unit);
+    $('audit-reverse-length').textContent = auditDimensionText(result.reverseLengthIn, unit);
+    $('audit-reverse-shoulder').textContent = auditDimensionText(result.reverseShoulderIn, unit);
+    $('audit-rounding-note').textContent = `胸部凑循环增加${result.repeatAdjustment}支；肩宽${result.shoulderRaw.toFixed(1)}支取整为${result.shoulderStitches}支。反算差值要留给试板判断，不能默默忽略。`;
+    const stages = [
+      {
+        title: values.measurement === 'circumference' ? '先把胸围除以2，得到单片平铺胸阔' : '先确认输入的是平铺胸阔',
+        copy: '宽度、长度和密度的单位必须先统一。当前横密与纵密都按每英寸记录，所以厘米尺寸会先换成英寸。',
+        formula: values.measurement === 'circumference' ? `${auditDimensionText(result.chestEnteredIn, unit)} ÷ 2 ＝ ${auditDimensionText(result.flatWidthIn, unit)}` : `平铺胸阔 ＝ ${auditDimensionText(result.flatWidthIn, unit)}`,
+        check: '先看尺寸表的量法说明。胸围是绕身体一圈，胸阔是衣片平铺宽度，两者不能混着乘密度。'
+      },
+      {
+        title: '横向尺寸乘横密，纵向尺寸乘纵密',
+        copy: `胸阔先得到${result.baseChestRaw.toFixed(1)}支，身长先得到${result.bodyCoursesRaw.toFixed(1)}转，单边肩宽先得到${result.shoulderRaw.toFixed(1)}支。`,
+        formula: `胸阔：${result.flatWidthIn.toFixed(2)} × ${result.stitchGauge} ＝ ${result.baseChestRaw.toFixed(1)}支；身长：${result.lengthIn.toFixed(2)} × ${result.courseGauge} ＝ ${result.bodyCoursesRaw.toFixed(1)}转`,
+        check: '支数必须变成整数，转数也要按工厂计数规则处理。本课先四舍五入，真实工艺还要看加减针节奏和组织循环。'
+      },
+      {
+        title: '把边针和凑循环分开，不要只写一个结果',
+        copy: `基础${result.baseChest}支，左右边针共${result.edgeEach * 2}支，再为${result.repeat}针循环补${result.repeatAdjustment}支。`,
+        formula: `${result.baseChest} + ${result.edgeEach}×2 + ${result.repeatAdjustment} ＝ ${result.finalStitches}支`,
+        check: result.repeatAdjustment ? `最终${result.finalStitches}能被${result.repeat}整除；多出的${result.repeatAdjustment}支来自凑循环，不是凭空加的缝耗。` : `加边针后已经能被${result.repeat}整除，本次不用额外凑针。`
+      },
+      {
+        title: '最后必须反算，确认工艺结果回到多少尺寸',
+        copy: '反算不是为了证明自己一定正确，而是把取整、边针和循环造成的尺寸差显示出来。差值是否可以接受，要靠试板和洗后尺寸判断。',
+        formula: `胸阔＝(${result.finalStitches}−${result.edgeEach * 2})÷${result.stitchGauge}＝${result.reverseChestIn.toFixed(2)}英寸`,
+        check: `反算胸阔${auditDimensionText(result.reverseChestIn, unit)}，身长${auditDimensionText(result.reverseLengthIn, unit)}，单边肩宽${auditDimensionText(result.reverseShoulderIn, unit)}。`
+      }
+    ];
+    const stage = stages[auditStep];
+    $('audit-stage-title').textContent = stage.title;
+    $('audit-stage-copy').textContent = stage.copy;
+    $('audit-stage-formula').textContent = stage.formula;
+    $('audit-stage-check').textContent = stage.check;
+    return true;
+  }
+
+  auditFieldIds.forEach(id => {
+    $(id).addEventListener('input', () => {
+      showAuditFieldError(id);
+      if (!Object.keys(auditErrors(auditValues())).length) drawAudit(false);
+    });
+    $(id).addEventListener('blur', () => showAuditFieldError(id, auditErrors(auditValues())[id] || ''));
+  });
+  $('audit-measurement').addEventListener('change', event => {
+    const next = event.target.value;
+    const chest = Number($('audit-chest').value);
+    if (Number.isFinite(chest) && chest > 0) $('audit-chest').value = (next === 'circumference' ? chest * 2 : chest / 2).toFixed(2);
+    drawAudit(false);
+  });
+  $('audit-unit').addEventListener('change', event => {
+    const next = event.target.value;
+    const factor = auditUnit === 'in' && next === 'cm' ? 2.54 : auditUnit === 'cm' && next === 'in' ? 1 / 2.54 : 1;
+    ['audit-chest', 'audit-length', 'audit-shoulder'].forEach(id => {
+      const value = Number($(id).value);
+      if (Number.isFinite(value)) $(id).value = (value * factor).toFixed(2);
+    });
+    auditUnit = next;
+    drawAudit(false);
+  });
+  $('audit-form').addEventListener('submit', event => { event.preventDefault(); drawAudit(true); });
+  $('audit-reset').addEventListener('click', () => {
+    const defaults = { 'audit-chest': 18, 'audit-length': 24, 'audit-shoulder': 5.5, 'audit-stitch-gauge': 9, 'audit-course-gauge': 4.5, 'audit-edge': 2, 'audit-repeat': 2 };
+    Object.entries(defaults).forEach(([id, value]) => { $(id).value = value; });
+    $('audit-measurement').value = 'flat'; $('audit-unit').value = 'in'; auditUnit = 'in'; auditStep = 0;
+    document.querySelectorAll('[data-audit-step]').forEach(button => {
+      if (Number(button.dataset.auditStep) === 0) button.setAttribute('aria-current', 'step');
+      else button.removeAttribute('aria-current');
+    });
+    drawAudit(false);
+  });
+  document.querySelectorAll('[data-audit-step]').forEach(button => button.addEventListener('click', () => selectAuditStep(button.dataset.auditStep)));
+  document.querySelectorAll('[data-audit-answer]').forEach(button => button.addEventListener('click', () => {
+    const correct = button.dataset.auditAnswer === 'half';
+    $('audit-quiz-feedback').textContent = correct ? '答对了：36英寸是绕一圈的胸围，常见分片前／后幅计算要先用36÷2＝18英寸平铺胸阔，再算18×9＝162支基础值。' : '不对。横密单位已经是支/英寸，不需要改成纵密或再乘2.54；真正漏掉的是胸围到平铺胸阔的÷2。';
+    $('audit-quiz-feedback').className = correct ? 'correct' : 'wrong';
+  }));
+
   function setSheetPreviewScale(nextScale) {
     sheetPreviewScale = Math.max(.5, Math.min(3, nextScale));
     $('sheet-preview-image').style.width = `${sheetPreviewScale * 100}%`;
@@ -867,7 +1061,7 @@ if (typeof document !== 'undefined') {
     let id = location.hash.slice(1) || 'stitches';
     if (id === 'lesson-01') id = 'stitches';
     if (id === 'lesson-02') id = 'density';
-    if (!['map', 'stitches', 'density', 'pieces', 'structures', 'simulator', 'machine'].includes(id)) id = 'stitches';
+    if (!['map', 'stitches', 'density', 'pieces', 'structures', 'audit', 'simulator', 'machine'].includes(id)) id = 'stitches';
     stopStitches();
     stopPiece();
     stopSimulator();
@@ -878,13 +1072,13 @@ if (typeof document !== 'undefined') {
       if (link.dataset.page === id) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     });
-    const position = ['map', 'stitches', 'density', 'pieces', 'structures', 'simulator', 'machine'].indexOf(id) + 1;
+    const position = ['map', 'stitches', 'density', 'pieces', 'structures', 'audit', 'simulator', 'machine'].indexOf(id) + 1;
     $('current-number').textContent = routeInfo[id][0];
     $('current-name').textContent = routeInfo[id][1];
     $('current-task').textContent = routeInfo[id][2];
-    $('progress-text').textContent = `${position} / 7`;
+    $('progress-text').textContent = `${position} / 8`;
     $('course-progress').value = position;
-    $('course-progress').textContent = `${position} / 7`;
+    $('course-progress').textContent = `${position} / 8`;
     document.title = document.getElementById(id).querySelector('h1').textContent + ' · 织学堂';
   }
   window.addEventListener('hashchange', route);
@@ -898,5 +1092,6 @@ if (typeof document !== 'undefined') {
   drawGarment();
   drawBed3d();
   drawStructure();
+  drawAudit(false);
   route();
 }
