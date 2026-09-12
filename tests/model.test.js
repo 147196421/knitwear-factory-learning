@@ -25,6 +25,19 @@ assert.deepEqual(
 );
 assert.equal(model.simulationState(999).step, 127);
 
+const jerseyStart = model.structureState("jersey", 0);
+assert.deepEqual(
+  { label: jerseyStart.label, bed: jerseyStart.bed, needle: jerseyStart.needle, direction: jerseyStart.direction, totalSteps: jerseyStart.totalSteps },
+  { label: "单边", bed: "front", needle: 0, direction: "right", totalSteps: 32 }
+);
+assert.equal(model.structureState("jersey", 31).bed, "front");
+assert.equal(model.structureState("rib", 0).bed, "front");
+assert.equal(model.structureState("rib", 1).bed, "rear");
+assert.equal(model.structureState("rib", 8).needle, 7);
+assert.equal(model.structureState("full", 0).bed, "front");
+assert.equal(model.structureState("full", 8).bed, "rear");
+assert.equal(model.structureState("full", 999).step, 31);
+
 const sheet1FrontStart = model.garmentState("sheet1", "front", 0);
 assert.deepEqual(
   { course: sheet1FrontStart.course, stitches: sheet1FrontStart.stitches, total: sheet1FrontStart.total, direction: sheet1FrontStart.direction },
@@ -53,4 +66,4 @@ assert.deepEqual(
   { course: 73, total: 73, stage: "袖片完成" }
 );
 
-console.log("教学模型验算通过：针数变化、密度换算、逐针往返、两张图纸的六片成形");
+console.log("教学模型验算通过：针数变化、密度换算、三种组织针床分配、逐针往返、两张图纸的六片成形");

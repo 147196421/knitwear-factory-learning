@@ -44,6 +44,43 @@ const KnitModel = (() => {
     const completedInRow = phase === phases.length - 1 ? slot + 1 : slot;
     return { step: safeStep, totalSteps, row, rowCount, slot, phase, phaseName: phases[phase], direction, needle, completedInRow };
   }
+  const structurePlans = {
+    jersey: {
+      label: '单边', short: '前床连续成圈',
+      plain: '这一排只让前针床工作。你从正面看到整齐的正面线圈，背面是反面线圈。',
+      paper: '工艺单写“单边”时，先把它理解为一种基本组织名称；针数和密度仍要看对应单边试片。',
+      machine: '教学模型中前床8个针位依次成圈，后床休息。真实机器仍由机头三角和选针系统控制。',
+      compare: ['通常较薄', '横向弹性较小', '边缘较容易卷'],
+      bedFor: () => 'front'
+    },
+    rib: {
+      label: '1×1罗纹', short: '前1针、后1针交替',
+      plain: '相邻针位轮流放在前床和后床，正面针与反面针交替，所以横向拉开后更容易回弹。',
+      paper: '“1×1”先读成一个正针、一个反针的重复。它不是“1支加1支”的加针公式。',
+      machine: '教学模型按针位奇偶让前、后床交替成圈；真实排针、起底和转组织要按程序确认。',
+      compare: ['通常比单边厚', '横向弹性明显', '常见于下摆和袖口'],
+      bedFor: (needle) => needle % 2 === 0 ? 'front' : 'rear'
+    },
+    full: {
+      label: '四平概念', short: '前后床分行参与',
+      plain: '先把它看成前、后针床都参与的一类双面结构。画面用前后床轮流整排成圈帮助理解厚度来源。',
+      paper: '看到“四平”不能只凭名称抄程序；不同地区、师傅和系统的具体叫法、走针可能不同。',
+      machine: '本模型用前床一行、后床一行交替说明空间关系，不代表慈星机器的正式四平程序。',
+      compare: ['通常更厚实', '正反面更接近', '耗纱与密度需另做试片'],
+      bedFor: (_needle, row) => row % 2 === 0 ? 'front' : 'rear'
+    }
+  };
+  function structureState(kind, step, needleCount = 8, rowCount = 4) {
+    const plan = structurePlans[kind] || structurePlans.jersey;
+    const totalSteps = needleCount * rowCount;
+    const safeStep = Math.max(0, Math.min(totalSteps - 1, Math.round(Number(step) || 0)));
+    const row = Math.floor(safeStep / needleCount);
+    const slot = safeStep % needleCount;
+    const direction = row % 2 === 0 ? 'right' : 'left';
+    const needle = direction === 'right' ? slot : needleCount - 1 - slot;
+    const bed = plan.bedFor(needle, row);
+    return { ...plan, kind, step: safeStep, totalSteps, row, rowCount, slot, needle, bed, direction };
+  }
   const garmentPlans = {
     sheet1: {
       label: '图纸1',
@@ -126,7 +163,7 @@ const KnitModel = (() => {
     const evidence = safeCourse === 0 || safeCourse === plan.total ? '照片可辨认节点' : '教学推演过程';
     return { ...plan, ...shape, course: safeCourse, previous, delta, action, equation, evidence, segments, segment, direction: safeCourse % 2 === 0 ? 'right' : 'left' };
   }
-  return { events, calculate, simulationState, garmentPlans, garmentSegments, garmentState };
+  return { events, calculate, simulationState, structurePlans, structureState, garmentPlans, garmentSegments, garmentState };
 })();
 
 if (typeof module !== 'undefined') module.exports = KnitModel;
@@ -138,7 +175,8 @@ if (typeof document !== 'undefined') {
     stitches: ['02', '加针与停针', '本页任务：点“下一步”，观察左右各加1支后总针数怎样变化。'],
     density: ['03', '尺寸换算', '本页任务：移动横向密度，观察同样宽度为什么需要不同针数。'],
     pieces: ['04', '从下往上读织片', '本页任务：选择前幅、后幅或袖片，再逐段向上阅读。'],
-    simulator: ['05', '图纸到衣片', '本页任务：选择图纸和衣片，从第0转开始看机头往返、针数变化和衣片成形。'],
+    structures: ['05', '认识三种组织', '本页任务：切换单边、1×1罗纹和四平概念，观察前后针床谁在成圈。'],
+    simulator: ['06', '图纸到衣片', '本页任务：选择图纸和衣片，从第0转开始看机头往返、针数变化和衣片成形。'],
     machine: ['档案', '准备购买的机器', '本页任务：区分铭牌确认、资料推断和仍待现场确认的信息。']
   };
   let mode = 'increase';
@@ -157,6 +195,9 @@ if (typeof document !== 'undefined') {
   let garmentCourse = 0;
   let garmentTimer = null;
   let garmentStopAt = null;
+  let structureKind = 'jersey';
+  let structureStep = 0;
+  let structureTimer = null;
   let sheetPreviewScale = 1;
   let sheetPreviewTrigger = null;
 
@@ -707,6 +748,96 @@ if (typeof document !== 'undefined') {
   });
   selectSimLayer(simLayerButtons.find(button => button.getAttribute('aria-selected') === 'true'));
 
+  function stopStructure() {
+    clearTimeout(structureTimer);
+    structureTimer = null;
+    if ($('structure-play')) $('structure-play').textContent = structureStep >= 31 ? '从头播放' : '播放逐针动画';
+  }
+
+  function structureLoopPath(x, y, bed) {
+    const lift = bed === 'rear' ? -10 : 10;
+    return `M${x - 18} ${y}Q${x - 8} ${y + lift * 2} ${x} ${y}Q${x + 8} ${y - lift * 2} ${x + 18} ${y}`;
+  }
+
+  function drawStructure() {
+    const state = KnitModel.structureState(structureKind, structureStep);
+    const needleMarkup = bed => Array.from({ length: 8 }, (_, index) => {
+      const x = 110 + index * 75;
+      const current = state.needle === index && state.bed === bed;
+      const assigned = state.bedFor(index, state.row) === bed;
+      const y = bed === 'rear' ? 178 : 292;
+      return `<g class="structure-needle ${current ? 'current' : assigned ? 'assigned' : 'rest'}"><path d="M${x} ${y + 42}V${y - (current ? 38 : 12)}"/><path d="M${x} ${y - (current ? 38 : 12)}q0 -12 10 -12q9 0 9 8q0 7 -8 7"/><text x="${x}" y="${y + 66}" text-anchor="middle">${index + 1}</text></g>`;
+    }).join('');
+    $('structure-front-needles').innerHTML = needleMarkup('front');
+    $('structure-rear-needles').innerHTML = needleMarkup('rear');
+    let loops = '';
+    for (let completed = 0; completed < state.step; completed += 1) {
+      const past = KnitModel.structureState(structureKind, completed);
+      const x = 110 + past.needle * 75;
+      const y = (past.bed === 'rear' ? 222 : 350) + past.row * 17;
+      loops += `<path d="${structureLoopPath(x, y, past.bed)}" class="structure-loop ${past.bed}"/>`;
+    }
+    const currentX = 110 + state.needle * 75;
+    const currentY = (state.bed === 'rear' ? 222 : 350) + state.row * 17;
+    loops += `<path d="${structureLoopPath(currentX, currentY, state.bed)}" class="structure-loop current ${state.bed}"/>`;
+    $('structure-loops').innerHTML = loops;
+    const carriageX = 35 + state.needle / 7 * 510;
+    $('structure-carriage').setAttribute('transform', `translate(${carriageX.toFixed(1)} 0)`);
+    $('structure-yarn').setAttribute('d', `M380 10C310 34,${(carriageX + 66).toFixed(1)} 48,${currentX} ${currentY - 20}`);
+    $('structure-name').textContent = state.label;
+    $('structure-short').textContent = state.short;
+    $('structure-plain').textContent = state.plain;
+    $('structure-paper').textContent = state.paper;
+    $('structure-machine-copy').textContent = state.machine;
+    $('structure-direction').textContent = `机头：${state.direction === 'right' ? '左 → 右' : '右 → 左'}`;
+    $('structure-current').textContent = `${state.bed === 'front' ? '前床' : '后床'}第${state.needle + 1}针`;
+    $('structure-check').textContent = `第${state.row + 1}行，第${state.slot + 1}/8个动作：当前应由${state.bed === 'front' ? '前床' : '后床'}第${state.needle + 1}针参与。`;
+    $('structure-progress').textContent = `第${state.step + 1} / ${state.totalSteps}针`;
+    $('structure-properties').innerHTML = state.compare.map(item => `<span>${item}</span>`).join('');
+    $('structure-svg-title').textContent = `${state.label}：${state.bed === 'front' ? '前床' : '后床'}第${state.needle + 1}针正在成圈`;
+    $('structure-timeline').value = state.step;
+    $('structure-prev').disabled = state.step === 0;
+    $('structure-next').disabled = state.step === state.totalSteps - 1;
+    document.querySelectorAll('[data-knit-structure]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.knitStructure === structureKind)));
+    document.querySelectorAll('[data-structure-row]').forEach((item, index) => {
+      item.classList.toggle('active', index === state.row);
+      item.classList.toggle('done', index < state.row);
+    });
+  }
+
+  function advanceStructure() {
+    const state = KnitModel.structureState(structureKind, structureStep);
+    if (structureStep >= state.totalSteps - 1) { stopStructure(); return; }
+    structureTimer = setTimeout(() => {
+      structureStep += 1;
+      drawStructure();
+      advanceStructure();
+    }, Number($('structure-speed').value));
+  }
+
+  document.querySelectorAll('[data-knit-structure]').forEach(button => button.addEventListener('click', () => {
+    stopStructure();
+    structureKind = button.dataset.knitStructure;
+    structureStep = 0;
+    drawStructure();
+  }));
+  $('structure-play').addEventListener('click', () => {
+    if (structureTimer) { stopStructure(); return; }
+    if (structureStep >= 31) structureStep = 0;
+    $('structure-play').textContent = '暂停动画';
+    drawStructure();
+    advanceStructure();
+  });
+  $('structure-prev').addEventListener('click', () => { stopStructure(); structureStep = Math.max(0, structureStep - 1); drawStructure(); });
+  $('structure-next').addEventListener('click', () => { stopStructure(); structureStep = Math.min(31, structureStep + 1); drawStructure(); });
+  $('structure-reset').addEventListener('click', () => { stopStructure(); structureStep = 0; drawStructure(); });
+  $('structure-timeline').addEventListener('input', event => { stopStructure(); structureStep = Number(event.target.value); drawStructure(); });
+  document.querySelectorAll('[data-structure-answer]').forEach(button => button.addEventListener('click', () => {
+    const correct = button.dataset.structureAnswer === 'no';
+    $('structure-feedback').textContent = correct ? '答对了：组织改变会改变线圈排列、弹性和缩率，必须用对应罗纹试片重新量密度。' : '再想一步：针数相同只表示针位数量相同，不表示织出来的宽度、弹性和缩率相同。';
+    $('structure-feedback').className = correct ? 'correct' : 'wrong';
+  }));
+
   function setSheetPreviewScale(nextScale) {
     sheetPreviewScale = Math.max(.5, Math.min(3, nextScale));
     $('sheet-preview-image').style.width = `${sheetPreviewScale * 100}%`;
@@ -736,27 +867,28 @@ if (typeof document !== 'undefined') {
     let id = location.hash.slice(1) || 'stitches';
     if (id === 'lesson-01') id = 'stitches';
     if (id === 'lesson-02') id = 'density';
-    if (!['map', 'stitches', 'density', 'pieces', 'simulator', 'machine'].includes(id)) id = 'stitches';
+    if (!['map', 'stitches', 'density', 'pieces', 'structures', 'simulator', 'machine'].includes(id)) id = 'stitches';
     stopStitches();
     stopPiece();
     stopSimulator();
     stopGarment();
+    stopStructure();
     document.querySelectorAll('.page').forEach(section => section.hidden = section.id !== id);
     document.querySelectorAll('[data-page]').forEach(link => {
       if (link.dataset.page === id) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     });
-    const position = ['map', 'stitches', 'density', 'pieces', 'simulator', 'machine'].indexOf(id) + 1;
+    const position = ['map', 'stitches', 'density', 'pieces', 'structures', 'simulator', 'machine'].indexOf(id) + 1;
     $('current-number').textContent = routeInfo[id][0];
     $('current-name').textContent = routeInfo[id][1];
     $('current-task').textContent = routeInfo[id][2];
-    $('progress-text').textContent = `${position} / 6`;
+    $('progress-text').textContent = `${position} / 7`;
     $('course-progress').value = position;
-    $('course-progress').textContent = `${position} / 6`;
+    $('course-progress').textContent = `${position} / 7`;
     document.title = document.getElementById(id).querySelector('h1').textContent + ' · 织学堂';
   }
   window.addEventListener('hashchange', route);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { stopStitches(); stopPiece(); stopSimulator(); stopGarment(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { stopStitches(); stopPiece(); stopSimulator(); stopGarment(); stopStructure(); } });
   drawStitches();
   setZone('identity');
   calculateDensity();
@@ -765,5 +897,6 @@ if (typeof document !== 'undefined') {
   drawSimulator();
   drawGarment();
   drawBed3d();
+  drawStructure();
   route();
 }
