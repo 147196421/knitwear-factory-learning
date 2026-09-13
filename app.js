@@ -192,7 +192,26 @@ const KnitModel = (() => {
     const evidence = safeCourse === 0 || safeCourse === plan.total ? '照片可辨认节点' : '教学推演过程';
     return { ...plan, ...shape, course: safeCourse, previous, delta, action, equation, evidence, segments, segment, direction: safeCourse % 2 === 0 ? 'right' : 'left' };
   }
-  return { events, calculate, auditDimensions, simulationState, structurePlans, structureState, garmentPlans, garmentSegments, garmentState };
+  function decodeNotation({ interval, amount, times, operation = 'hold', start = 20, sides = 2 }) {
+    const safeInterval = Math.max(1, Math.round(Number(interval) || 1));
+    const safeAmount = Math.max(1, Math.round(Number(amount) || 1));
+    const safeTimes = Math.max(1, Math.round(Number(times) || 1));
+    const safeStart = Math.max(0, Math.round(Number(start) || 0));
+    const safeSides = Math.max(1, Math.round(Number(sides) || 1));
+    const direction = operation === 'increase' ? 1 : -1;
+    const changePerRepeat = safeAmount * safeSides * direction;
+    const steps = [{ repeat: 0, active: safeStart, change: 0 }];
+    for (let repeat = 1; repeat <= safeTimes; repeat += 1) {
+      steps.push({ repeat, active: safeStart + changePerRepeat * repeat, change: changePerRepeat });
+    }
+    return {
+      interval: safeInterval, amount: safeAmount, times: safeTimes, start: safeStart, sides: safeSides,
+      operation: direction > 0 ? 'increase' : 'hold', sign: direction > 0 ? '+' : '−',
+      actionWord: direction > 0 ? '加' : '停', changePerRepeat,
+      totalChange: changePerRepeat * safeTimes, final: steps.at(-1).active, steps
+    };
+  }
+  return { events, calculate, auditDimensions, simulationState, structurePlans, structureState, garmentPlans, garmentSegments, garmentState, decodeNotation };
 })();
 
 if (typeof module !== 'undefined') module.exports = KnitModel;
@@ -334,6 +353,28 @@ if (typeof document !== 'undefined') {
     document.querySelectorAll('[data-mode]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
     drawStitches();
   }));
+
+  const notationExamples = {
+    basic: { interval: 1, amount: 1, times: 2, operation: 'hold', start: 20 },
+    increase: { interval: 5, amount: 1, times: 3, operation: 'increase', start: 56 },
+    hold: { interval: 1, amount: 2, times: 3, operation: 'hold', start: 112 }
+  };
+  function drawNotation(key = 'basic') {
+    const result = KnitModel.decodeNotation(notationExamples[key] || notationExamples.basic);
+    $('notation-interval').textContent = result.interval;
+    $('notation-amount').textContent = result.amount;
+    $('notation-times').textContent = result.times;
+    $('notation-sign-one').textContent = result.sign;
+    $('notation-sign-two').textContent = result.sign;
+    $('notation-interval-copy').textContent = `每隔${result.interval}转`;
+    $('notation-amount-copy').textContent = `每次每边${result.actionWord}${result.amount}支`;
+    $('notation-times-copy').textContent = `共重复${result.times}次`;
+    $('notation-read').textContent = `${result.interval}${result.sign}${result.amount}${result.sign}${result.times}读作：每隔${result.interval}转，左右每边${result.actionWord}${result.amount}支，共做${result.times}次。`;
+    $('notation-total').textContent = `左右合计：${result.amount}支 × ${result.times}次 × 2边 ＝ ${Math.abs(result.totalChange)}支；工作针${result.sign}${Math.abs(result.totalChange)}支。`;
+    $('notation-steps').innerHTML = result.steps.map((step, index) => `<li class="${index ? 'changed' : ''}"><span>${index ? `第${index}次` : '开始'}</span><strong>${step.active}支</strong>${index ? `<small>左右各${result.actionWord}${result.amount}支</small>` : '<small>原有工作针</small>'}</li>`).join('');
+    document.querySelectorAll('[data-notation]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.notation === key)));
+  }
+  document.querySelectorAll('[data-notation]').forEach(button => button.addEventListener('click', () => drawNotation(button.dataset.notation)));
 
   const zones = {
     identity: ['这是哪一款、哪一个版本？', '先核对款式、尺码、日期和改版记录。看错尺码或旧版本，后面的计算再正确也没有用。', '手写批注不一定是最终版，要让负责工艺的人确认。'],
@@ -1084,6 +1125,7 @@ if (typeof document !== 'undefined') {
   window.addEventListener('hashchange', route);
   document.addEventListener('visibilitychange', () => { if (document.hidden) { stopStitches(); stopPiece(); stopSimulator(); stopGarment(); stopStructure(); } });
   drawStitches();
+  drawNotation();
   setZone('identity');
   calculateDensity();
   drawPiece();

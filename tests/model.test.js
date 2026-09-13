@@ -39,6 +39,13 @@ assert.deepEqual(
 );
 assert.equal(model.simulationState(999).step, 127);
 
+const notationBasic = model.decodeNotation({ interval: 1, amount: 1, times: 2, operation: "hold", start: 20 });
+assert.deepEqual(notationBasic.steps.map(step => step.active), [20, 18, 16]);
+assert.equal(notationBasic.totalChange, -4);
+const notationIncrease = model.decodeNotation({ interval: 5, amount: 1, times: 3, operation: "increase", start: 56 });
+assert.deepEqual(notationIncrease.steps.map(step => step.active), [56, 58, 60, 62]);
+assert.equal(notationIncrease.totalChange, 6);
+
 const jerseyStart = model.structureState("jersey", 0);
 assert.deepEqual(
   { label: jerseyStart.label, bed: jerseyStart.bed, needle: jerseyStart.needle, direction: jerseyStart.direction, totalSteps: jerseyStart.totalSteps },
@@ -80,4 +87,4 @@ assert.deepEqual(
   { course: 73, total: 73, stage: "袖片完成" }
 );
 
-console.log("教学模型验算通过：针数变化、尺寸人工验算、三种组织针床分配、逐针往返、两张图纸的六片成形");
+console.log("教学模型验算通过：工艺符号拆解、针数变化、尺寸人工验算、三种组织针床分配、逐针往返、两张图纸的六片成形");
