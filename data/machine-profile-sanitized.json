@@ -15,8 +15,35 @@
     "multiple_similar_machines_in_operation": true,
     "production_operator_screen_available": true
   },
+  "confirmed_from_version_screen": {
+    "controller_display_name": "慈星通用电脑横机系统",
+    "controller_ui_version": "V1.0",
+    "system_model_display": "21044110800111_2601 (SMSA5_SP)",
+    "main_controller_version": "V5.0.YR-1075_FAST (1ec25d)",
+    "main_controller_build_time": "2025-06-30 17:02:05",
+    "carriage_version_display": "0x1D99.122-0x2D99.122 (E490-5)",
+    "comb_version_display": "V0.0.5.6 (E732)",
+    "comb_build_time_display": "2025-10-29 00:00:00",
+    "servo_version_display": "225.89 (F)",
+    "carriage_width_in": 12.7480,
+    "carriage_center_distance_in": 5.1969,
+    "selector_distance_in": 3.9961,
+    "direction_change": "电机",
+    "tight_stitch": "无",
+    "presser_foot": "无",
+    "brush": "无",
+    "sinker_motor_type": "普通",
+    "sinker_count": "两生克",
+    "sinker_mode": "交叉",
+    "action_motor_positions": "7工位",
+    "racking_display": "前后床",
+    "lift_motor_type": "力矩",
+    "takedown_mode": "单",
+    "roller_drive": "内置",
+    "timing_pulley": "小带轮",
+    "operation_method": "操作杆"
+  },
   "not_yet_confirmed": [
-    "controller_brand_and_version",
     "pattern_design_software_and_version",
     "machine_program_file_extension",
     "needle_bed_type",
@@ -24,5 +51,5 @@
     "exact_comb_and_takedown_configuration",
     "usable_knitting_scope"
   ],
-  "privacy": "machine_serial_number_production_filename_and_original_photos_are_not_public"
+  "privacy": "machine_id_serial_number_production_filename_and_original_photos_are_not_public"
 }
