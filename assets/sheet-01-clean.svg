@@ -33,9 +33,9 @@
     <path d="M54 520V220L78 190L87 106H112Q130 135 148 106H173L182 190L206 220V520Z" class="shape"/>
     <rect x="54" y="486" width="152" height="34" class="rib"/><line x1="54" y1="486" x2="206" y2="486" class="line"/>
     <line x1="54" y1="220" x2="206" y2="220" class="stage"/><line x1="80" y1="190" x2="180" y2="190" class="stage"/>
-    <path d="M44 520H216m-12-8 12 8-12 8M56 512l-12 8 12 8" class="dimension"/><text x="130" y="555" text-anchor="middle" class="label accent">开 163 支</text>
-    <path d="M225 520V106m-8 12 8-12 8 12M217 508l8 12 8-12" class="dimension"/><text x="241" y="330" transform="rotate(90 241 330)" text-anchor="middle" class="label accent">衫身约 94 转</text>
-    <rect x="32" y="64" width="196" height="34" rx="4" class="confirmed"/><text x="130" y="87" text-anchor="middle" class="tiny">开针与总转数：照片可辨认</text>
+    <path d="M44 520H216m-12-8 12 8-12 8M56 512l-12 8 12 8" class="dimension"/><text x="130" y="555" text-anchor="middle" class="label accent">图旁 160 支</text>
+    <path d="M225 520V106m-8 12 8-12 8 12M217 508l8 12 8-12" class="dimension"/><text x="241" y="330" transform="rotate(90 241 330)" text-anchor="middle" class="label accent">衫身约 95 转</text>
+    <rect x="32" y="64" width="196" height="34" rx="4" class="confirmed"/><text x="130" y="87" text-anchor="middle" class="tiny">图旁针数与总转数可辨认</text>
     <text x="130" y="584" text-anchor="middle" class="tiny muted">夹位、领窝、肩斜明细：待复核</text>
   </g>
 
@@ -45,7 +45,7 @@
     <rect x="54" y="486" width="152" height="34" class="rib"/><line x1="54" y1="486" x2="206" y2="486" class="line"/>
     <line x1="54" y1="220" x2="206" y2="220" class="stage"/><line x1="80" y1="190" x2="180" y2="190" class="stage"/>
     <path d="M44 520H216m-12-8 12 8-12 8M56 512l-12 8 12 8" class="dimension"/><text x="130" y="555" text-anchor="middle" class="label accent">开 163 支</text>
-    <path d="M225 520V106m-8 12 8-12 8 12M217 508l8 12 8-12" class="dimension"/><text x="241" y="330" transform="rotate(90 241 330)" text-anchor="middle" class="label accent">衫身约 95 转</text>
+    <path d="M225 520V106m-8 12 8-12 8 12M217 508l8 12 8-12" class="dimension"/><text x="241" y="330" transform="rotate(90 241 330)" text-anchor="middle" class="label accent">衫身约 94 转</text>
     <rect x="32" y="64" width="196" height="34" rx="4" class="confirmed"/><text x="130" y="87" text-anchor="middle" class="tiny">开针与总转数：照片可辨认</text>
     <text x="130" y="584" text-anchor="middle" class="tiny muted">后领较浅｜身段宽度仍待复核</text>
   </g>

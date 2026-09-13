@@ -6,12 +6,12 @@ const KnitModel = (() => {
     hold: [[1, 2, 3], [1, 3, 7], [1, 5, 4]]
   };
   function events(mode) {
-    let active = mode === 'increase' ? 56 : 112;
+    let active = mode === 'increase' ? 55 : 111;
     let held = 0;
     const result = [{
       active, held, previous: active, interval: 0, amount: 0,
       times: 0, repeat: 0, stage: 0,
-      code: mode === 'increase' ? '开56支' : '袖身最大112支'
+      code: mode === 'increase' ? '开55支' : '袖身最大111支'
     }];
     plans[mode].forEach(([interval, amount, times], stage) => {
       for (let repeat = 1; repeat <= times; repeat += 1) {
@@ -113,8 +113,8 @@ const KnitModel = (() => {
   const garmentPlans = {
     sheet1: {
       label: '图纸1',
-      front: { label: '前幅', kind: 'body', start: 163, body: 163, total: 94, neck: 'front', source: '照片可辨认：开163支、衫身94转' },
-      back: { label: '后幅', kind: 'body', start: 163, body: 160, total: 95, neck: 'back', source: '照片可辨认：开163支、衫身95转；身段宽度仍需原纸复核' },
+      front: { label: '前幅', kind: 'body', start: 160, body: 160, total: 95, neck: 'front', source: '照片可辨认：图形底部160支、衫身95转；下方分边开针说明仍需原纸复核' },
+      back: { label: '后幅', kind: 'body', start: 163, body: 163, total: 94, neck: 'back', source: '照片可辨认：图形底部163支、衫身94转' },
       sleeve: { label: '袖片', kind: 'sleeve', start: 55, body: 111, total: 59, source: '照片可辨认：开55支、袖身59转、上部111支' }
     },
     sheet2: {
@@ -268,14 +268,14 @@ if (typeof document !== 'undefined') {
       : (mode === 'increase' ? '袖口开针' : '开始做袖山');
     $('action-title').textContent = stitchStep
       ? (mode === 'increase' ? `左右各新增 ${event.amount} 支针` : `左右各暂停 ${event.amount} 支针`)
-      : (mode === 'increase' ? '先准备 56 支针' : '112 支针，准备分批停织');
+      : (mode === 'increase' ? '先准备 55 支针' : '111 支针，准备分批停织');
     $('action-copy').textContent = stitchStep
       ? (mode === 'increase'
           ? '看橙色针位：这是这一次才加入工作的针。旧针仍继续编织，织片逐渐变宽。'
           : '看灰色针位：线圈仍保留在针上，只是暂时不织。中间继续工作，两侧累计停织。')
       : (mode === 'increase'
           ? '蓝色短线表示正在工作的针位。点“下一步”，看第一轮左右各加一支。'
-          : '现在112支都在工作。下一步从两边各停2支，观察工作范围缩小。');
+          : '现在111支都在工作。下一步从两边各停2支，观察工作范围缩小。');
     $('action-code').textContent = event.code + (mode === 'hold' && stitchStep ? '（停针）' : '');
     $('code-parts').innerHTML = stitchStep
       ? `<dt>动作间隔</dt><dd>每 ${event.interval} 转</dd><dt>每次每边</dt><dd>${mode === 'increase' ? '加' : '停'} ${event.amount} 支</dd><dt>本段重复</dt><dd>${event.repeat} / ${event.times} 次</dd>`
@@ -307,7 +307,7 @@ if (typeof document !== 'undefined') {
     $('fabric-rows').innerHTML = rows;
 
     let needles = '';
-    const total = mode === 'hold' ? 112 : event.active;
+    const total = mode === 'hold' ? 111 : event.active;
     const heldEachSide = event.held / 2;
     for (let needle = 0; needle < total; needle += 1) {
       const isHeld = needle < heldEachSide || needle >= total - heldEachSide;
@@ -356,8 +356,8 @@ if (typeof document !== 'undefined') {
 
   const notationExamples = {
     basic: { interval: 1, amount: 1, times: 2, operation: 'hold', start: 20 },
-    increase: { interval: 5, amount: 1, times: 3, operation: 'increase', start: 56 },
-    hold: { interval: 1, amount: 2, times: 3, operation: 'hold', start: 112 }
+    increase: { interval: 5, amount: 1, times: 3, operation: 'increase', start: 55 },
+    hold: { interval: 1, amount: 2, times: 3, operation: 'hold', start: 111 }
   };
   function drawNotation(key = 'basic') {
     const result = KnitModel.decodeNotation(notationExamples[key] || notationExamples.basic);

@@ -8,15 +8,15 @@
   "sheets": {
     "sheet1": {
       "public_label": "图纸1",
-      "front": { "cast_on_stitches": 163, "approx_total_courses": 94, "confidence": "照片可辨认" },
-      "back": { "cast_on_stitches": 163, "approx_total_courses": 95, "body_stitches_for_animation": 160, "confidence": "开针与总转数较清楚；身段宽度待复核" },
+      "front": { "diagram_bottom_stitches": 160, "approx_total_courses": 95, "confidence": "图形底部与总转数可辨认；下方分边开针说明仍需原纸复核" },
+      "back": { "diagram_bottom_stitches": 163, "approx_total_courses": 94, "confidence": "照片可辨认" },
       "sleeve": { "cast_on_stitches": 55, "approx_total_courses": 59, "upper_width_stitches": 111, "confidence": "照片可辨认" }
     },
     "sheet2": {
       "public_label": "图纸2 · 圆领款",
       "front": { "cast_on_stitches": 154, "approx_total_courses": 79, "body_stitches_near_diagram": 166, "confidence": "照片可辨认；166的确切工艺含义仍需原纸复核" },
       "back": { "cast_on_stitches": 150, "approx_total_courses": 77, "body_stitches_near_diagram": 162, "confidence": "照片可辨认；162的确切工艺含义仍需原纸复核" },
-      "sleeve": { "cast_on_stitches": 55, "approx_total_courses": 73, "upper_width_stitches": 111, "confidence": "照片可辨认" }
+      "sleeve": { "cast_on_stitches": 55, "approx_total_courses": 73, "upper_width_stitches": 111, "remaining_top_stitches": 17, "increase_sequence": ["5+1+3", "1+1+7", "2+1+14", "4+1+4"], "hold_sequence": ["1-2-3", "1-3-7", "1-5-4"], "confidence": "照片可辨认，且55→111→17能够反算闭合" }
     }
   },
   "teaching_assumptions": [

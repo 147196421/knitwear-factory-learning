@@ -3,12 +3,12 @@ const model = require("../app.js");
 
 const increase = model.events("increase");
 assert.equal(increase.length, 29);
-assert.equal(increase.at(-1).active, 112);
+assert.equal(increase.at(-1).active, 111);
 assert.equal(increase.at(-1).held, 0);
 
 const hold = model.events("hold");
 assert.equal(hold.length, 15);
-assert.equal(hold.at(-1).active, 18);
+assert.equal(hold.at(-1).active, 17);
 assert.equal(hold.at(-1).held, 94);
 
 assert.deepEqual(model.calculate(18, 9, 20, 4.5), { stitches: 162, courses: 90 });
@@ -42,8 +42,8 @@ assert.equal(model.simulationState(999).step, 127);
 const notationBasic = model.decodeNotation({ interval: 1, amount: 1, times: 2, operation: "hold", start: 20 });
 assert.deepEqual(notationBasic.steps.map(step => step.active), [20, 18, 16]);
 assert.equal(notationBasic.totalChange, -4);
-const notationIncrease = model.decodeNotation({ interval: 5, amount: 1, times: 3, operation: "increase", start: 56 });
-assert.deepEqual(notationIncrease.steps.map(step => step.active), [56, 58, 60, 62]);
+const notationIncrease = model.decodeNotation({ interval: 5, amount: 1, times: 3, operation: "increase", start: 55 });
+assert.deepEqual(notationIncrease.steps.map(step => step.active), [55, 57, 59, 61]);
 assert.equal(notationIncrease.totalChange, 6);
 
 const jerseyStart = model.structureState("jersey", 0);
@@ -62,14 +62,14 @@ assert.equal(model.structureState("full", 999).step, 31);
 const sheet1FrontStart = model.garmentState("sheet1", "front", 0);
 assert.deepEqual(
   { course: sheet1FrontStart.course, stitches: sheet1FrontStart.stitches, total: sheet1FrontStart.total, direction: sheet1FrontStart.direction },
-  { course: 0, stitches: 163, total: 94, direction: "right" }
+  { course: 0, stitches: 160, total: 95, direction: "right" }
 );
-const sheet1FrontEnd = model.garmentState("sheet1", "front", 94);
+const sheet1FrontEnd = model.garmentState("sheet1", "front", 95);
 assert.equal(sheet1FrontEnd.stage, "前幅完成");
 assert.ok(sheet1FrontEnd.neckOpen > 0);
 assert.equal(sheet1FrontEnd.evidence, "照片可辨认节点");
 assert.equal(sheet1FrontEnd.segments.length, 6);
-assert.equal(model.garmentState("sheet1", "front", 999).course, 94);
+assert.equal(model.garmentState("sheet1", "front", 999).course, 95);
 
 const sheet1SleeveMid = model.garmentState("sheet1", "sleeve", 35);
 assert.ok(sheet1SleeveMid.stitches > 55);
