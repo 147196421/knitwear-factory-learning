@@ -39,6 +39,7 @@ docker compose up -d --build
 - 已升级：11.1版新增`1-1-2`工艺符号拆解尺，可切换加针／停针例子并逐次核对左右工作针数
 - 已升级：11.2版新增“版本页面证据卡”，确认机台端为慈星通用电脑横机系统 V1.0，并用小白语言区分控制系统与制版软件
 - 已升级：12.0版新增两张图纸精读课，并把袖片练习改回照片可反算的55→111→17；同时纠正图纸1前后幅对应
+- 已升级：12.1版新增《电脑横机通用基础课》，用原创图解讲横列／纵行、成圈／集圈／浮线、机器送纱路线、毛衫制造方式、试片闭环和制版学习顺序
 - 下一课：夹位收针、肩斜停针和领窝的逐组反算
 - 待确认：制版电脑的软件名称与版本、获准学习的测试程序文件后缀
 
@@ -52,15 +53,18 @@ docker compose up -d --build
 
 1. 打开 `index.html`，按左侧导航学习可视化课程。
 2. 打开 `sheet-reading-guide.html`，按两张参考图纸逐区精读并完成袖片反算。
-3. 阅读 `docs/lesson-01.md` 至 `docs/lesson-06.md` 复习课程。
-4. 查看 `CURRICULUM.md` 了解完整学习路线。
-5. 换用其他 AI 时，让它先读 `AI_HANDOFF.md` 和 `AGENTS.md`。
+3. 打开 `universal-course.html`，补齐不同品牌电脑横机都要用到的共同基础。
+4. 阅读 `docs/lesson-01.md` 至 `docs/lesson-06.md` 复习课程。
+5. 查看 `CURRICULUM.md` 了解完整学习路线。
+6. 换用其他 AI 时，让它先读 `AI_HANDOFF.md` 和 `AGENTS.md`。
 
 ## 文件说明
 
 - `index.html`：课程结构与页面内容
 - `sheet-reading-guide.html`：两张参考图纸的零基础逐区精读课
 - `sheet-guide.css`：精读课的手机、平板和电脑响应式样式
+- `universal-course.html`、`universal-course.css`：网上权威资料改写后的电脑横机通用基础课
+- `docs/ONLINE-SOURCES.md`：公开资料来源、采用范围、排除项和复核日期
 - `assets/sheet-01-clean.svg`、`assets/sheet-02-clean.svg`：两张脱敏教学清稿，放大不失真
 - `learning-guide.html`：浏览器可直接打开的零基础学习说明
 - `styles.css`：成人职业培训式“数字化针织工艺台”响应式界面
